@@ -138,6 +138,10 @@ async def collect_high_elo_data(
         processed = 0
         skipped = 0
         for match_id in all_match_ids:
+            if await database.is_match_processed(db_path, match_id):
+                skipped += 1
+                continue
+
             region_prefix = match_id.split("_")[0].lower()
             match_region = next(
                 (MATCH_REGIONS[r] for r in ALL_REGIONS if r.upper() == region_prefix),
@@ -150,6 +154,7 @@ async def collect_high_elo_data(
                 continue
 
             await _process_match(db_path, match_data)
+            await database.mark_match_processed(db_path, match_id)
             processed += 1
             if processed % 50 == 0:
                 print(f"[data_collector] {processed}/{len(all_match_ids)} 試合処理済み")

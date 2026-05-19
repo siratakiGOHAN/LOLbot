@@ -63,6 +63,11 @@ async def init_db(db_path: str) -> None:
                 ban_count     INTEGER DEFAULT 0,
                 updated_at    TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS processed_matches (
+                match_id      TEXT PRIMARY KEY,
+                processed_at  TEXT
+            );
         """)
         await db.commit()
 
@@ -240,6 +245,24 @@ async def upsert_lane_stats(
                 updated_at = excluded.updated_at
             """,
             (champion_id, lane, wins, games, pick_count, now),
+        )
+        await db.commit()
+
+
+async def is_match_processed(db_path: str, match_id: str) -> bool:
+    async with aiosqlite.connect(db_path) as db:
+        async with db.execute(
+            "SELECT 1 FROM processed_matches WHERE match_id = ?", (match_id,)
+        ) as cursor:
+            return await cursor.fetchone() is not None
+
+
+async def mark_match_processed(db_path: str, match_id: str) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    async with aiosqlite.connect(db_path) as db:
+        await db.execute(
+            "INSERT OR IGNORE INTO processed_matches (match_id, processed_at) VALUES (?, ?)",
+            (match_id, now),
         )
         await db.commit()
 
