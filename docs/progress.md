@@ -33,9 +33,10 @@ LoLbot_v2/
 | ビルド画像生成・キャッシュ | image_builder.py | ICON_SIZE=48, SEPARATOR=16 |
 | `/lolupdate` 管理コマンド | ui.py | DBのみ更新、画像キャッシュ保持 |
 | `/lolpatch` 管理コマンド | ui.py | 画像＋DataDragonキャッシュリセット |
-| 週次自動データ更新（168h） | main.py | discord.ext.tasks |
+| 日次自動データ更新（24h） | main.py | discord.ext.tasks |
 | Riot API データ収集 | data_collector.py | Master以上、全11リージョン対応 |
-| 自動テスト | tests/ | 35件全パス |
+| ビルド複数パターン表示（最大3パターン） | ui.py, database.py | 勝率降順・パターン1の画像付き |
+| 自動テスト | tests/ | 38件全パス |
 
 ---
 
@@ -62,7 +63,6 @@ LoLbot_v2/
 | 機能 | 規模 | 備考 |
 |---|---|---|
 | BAN率の分母を正確な総試合数に改善 | 小 | 現在は champion_lane_stats.games を流用（近似値） |
-| ビルド複数パターン対応 | 中〜大 | DBスキーマ変更（builds PKに pattern_rank 追加）が必要 |
 | サブルーン・セカンダリルーン | 小〜中 | data_collector + builds テーブル拡張 |
 | 本番起動設定（NSSM） | 小 | 設定ファイル作成のみ |
 
