@@ -124,6 +124,31 @@ async def test_get_build_image_placeholder_on_missing_url(dirs):
     assert result.exists()
 
 
+@pytest.mark.asyncio
+async def test_get_builds_image_stacks_rows(dirs):
+    """複数パターンが縦に並んだ画像が生成される。高さ = ICON_SIZE*N + ROW_GAP*(N-1)"""
+    icon_dir, _, _ = dirs
+    for item_id in ["3071", "3053"]:
+        _make_icon(icon_dir / f"{item_id}.png")
+
+    rows = [
+        {"item_ids": ["3071"], "icon_url_map": {"3071": None}, "keystone_id": None, "keystone_url": None},
+        {"item_ids": ["3053"], "icon_url_map": {"3053": None}, "keystone_id": None, "keystone_url": None},
+    ]
+    result = await image_builder.get_builds_image(rows)
+    assert result is not None
+    assert result.exists()
+    img = Image.open(result)
+    expected_h = image_builder.ICON_SIZE * 2 + image_builder.ROW_GAP * 1
+    assert img.height == expected_h
+
+
+@pytest.mark.asyncio
+async def test_get_builds_image_empty_returns_none(dirs):
+    """空リストのときは None を返す。"""
+    assert await image_builder.get_builds_image([]) is None
+
+
 def test_clear_image_cache(dirs):
     """clear_image_cache でアイコン・ルーン・ビルド画像が全削除される。"""
     icon_dir, rune_icon_dir, build_dir = dirs

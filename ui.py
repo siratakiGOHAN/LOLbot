@@ -255,17 +255,17 @@ class BuildButton(discord.ui.Button):
             inline=False,
         )
 
-        first_build = builds[0]
-        icon_url_map = {
-            item_id: core.ddragon_item_image(item_id)
-            for item_id in first_build["item_ids"]
-        }
-        keystone_id = str(first_build["keystone_id"]) if first_build.get("keystone_id") else None
-        keystone_url = core.ddragon_rune_image(keystone_id) if keystone_id else None
+        build_rows = []
+        for b in builds:
+            ks_id = str(b["keystone_id"]) if b.get("keystone_id") else None
+            build_rows.append({
+                "item_ids": b["item_ids"],
+                "icon_url_map": {str(item_id): core.ddragon_item_image(item_id) for item_id in b["item_ids"]},
+                "keystone_id": ks_id,
+                "keystone_url": core.ddragon_rune_image(ks_id) if ks_id else None,
+            })
 
-        img_path = await image_builder.get_build_image(
-            first_build["item_ids"], icon_url_map, keystone_id, keystone_url
-        )
+        img_path = await image_builder.get_builds_image(build_rows)
 
         if img_path:
             file = discord.File(str(img_path), filename="build.png")

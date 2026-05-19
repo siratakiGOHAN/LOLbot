@@ -18,9 +18,10 @@ ICON_DIR      = _HERE / "data" / "item_icons"
 RUNE_ICON_DIR = _HERE / "data" / "rune_icons"
 BUILD_IMG_DIR = _HERE / "data" / "build_images"
 
-ICON_SIZE  = 48
-PADDING    = 6
-SEPARATOR  = 16   # アイテム群とキーストーンの間の余白
+ICON_SIZE  = 36
+PADDING    = 5
+SEPARATOR  = 12   # アイテム群とキーストーンの間の余白
+ROW_GAP    = 6    # パターン間の縦の余白
 
 
 async def _fetch_image(url: str, save_path: Path) -> Path | None:
@@ -107,6 +108,70 @@ async def get_build_image(
     # アイテムアイコンをキーストーンの右に貼り付け
     for i, icon in enumerate(item_icons):
         composite.paste(icon, (item_offset + i * (ICON_SIZE + PADDING), 0), icon)
+
+    composite.save(path, "PNG", optimize=True)
+    return path
+
+
+async def get_builds_image(build_rows: list[dict]) -> "Path | None":
+    """複数ビルドパターンを縦に並べた合成画像を生成・キャッシュして返す。
+
+    Args:
+        build_rows: [{"item_ids", "icon_url_map", "keystone_id", "keystone_url"}, ...]
+    """
+    if not build_rows:
+        return None
+
+    row_keys = []
+    for row in build_rows:
+        key = "_".join(str(i) for i in row["item_ids"])
+        if row.get("keystone_id"):
+            key += f"_ks{row['keystone_id']}"
+        row_keys.append(key)
+
+    BUILD_IMG_DIR.mkdir(parents=True, exist_ok=True)
+    path = BUILD_IMG_DIR / f"combined_{'--'.join(row_keys)}.png"
+    if path.exists():
+        return path
+
+    row_images: list[Image.Image] = []
+    for row in build_rows:
+        item_ids = row["item_ids"]
+        icon_url_map = row.get("icon_url_map", {})
+        ks_id = row.get("keystone_id")
+        ks_url = row.get("keystone_url")
+
+        item_icons = [
+            await _load_icon(str(i), icon_url_map.get(str(i)), ICON_DIR)
+            for i in item_ids
+        ]
+        ks_icon: Image.Image | None = None
+        if ks_id:
+            ks_icon = await _load_icon(str(ks_id), ks_url, RUNE_ICON_DIR)
+
+        n = len(item_icons)
+        row_w = ICON_SIZE * n + PADDING * max(0, n - 1)
+        if ks_icon:
+            row_w += ICON_SIZE + SEPARATOR
+
+        row_img = Image.new("RGBA", (row_w, ICON_SIZE), (0, 0, 0, 0))
+        item_offset = 0
+        if ks_icon:
+            row_img.paste(ks_icon, (0, 0), ks_icon)
+            item_offset = ICON_SIZE + SEPARATOR
+        for idx, icon in enumerate(item_icons):
+            row_img.paste(icon, (item_offset + idx * (ICON_SIZE + PADDING), 0), icon)
+
+        row_images.append(row_img)
+
+    max_w = max(img.width for img in row_images)
+    total_h = ICON_SIZE * len(row_images) + ROW_GAP * (len(row_images) - 1)
+    composite = Image.new("RGBA", (max_w, total_h), (0, 0, 0, 0))
+
+    y = 0
+    for row_img in row_images:
+        composite.paste(row_img, (0, y), row_img)
+        y += ICON_SIZE + ROW_GAP
 
     composite.save(path, "PNG", optimize=True)
     return path
