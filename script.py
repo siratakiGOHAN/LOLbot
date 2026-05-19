@@ -8,8 +8,8 @@ LANE_DISPLAY_NAMES: dict[str, str] = {
     "support": "SUP",
 }
 
-MSG_TITLE = "{enemy} へのカウンター ({lane})"
-MSG_DESCRIPTION = "勝率上位 {count} 体のカウンターチャンピオンです。"
+MSG_TITLE = "{enemy} のマッチアップ統計 ({lane})"
+MSG_DESCRIPTION = "{count} 体のチャンピオンのマッチアップデータです。"
 MSG_NO_DATA = "このマッチアップのデータが不足しています。"
 MSG_CHAMP_NOT_FOUND = "チャンピオン「{name}」が見つかりませんでした。日本語または英語で正確に入力してください。"
 MSG_LANE_NOT_FOUND = "レーン「{lane}」は無効です。top / jungle / mid / adc / support のいずれかを指定してください。"
@@ -20,7 +20,7 @@ MSG_UPDATE_ERROR = "データ更新中にエラーが発生しました: {error}
 MSG_PATCH_DONE = "パッチキャッシュをリセットしました。Data Dragon の最新データを取得済みです。"
 MSG_PATCH_ERROR = "パッチリセット中にエラーが発生しました: {error}"
 MSG_NO_PERMISSION = "このコマンドは管理者のみ実行できます。"
-MSG_BUILD_TITLE = "おすすめビルド"
+MSG_BUILD_TITLE = "よく使われるビルド"
 MSG_BUILD_IMAGE_BUTTON = "ビルド画像"
 MSG_YOUTUBE_LABEL = "YouTube でマッチアップ動画を見る"
 

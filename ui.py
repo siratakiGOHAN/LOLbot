@@ -59,7 +59,7 @@ async def champion_autocomplete(
 
 
 def setup_commands(tree: app_commands.CommandTree, db_path: str, riot_key: str) -> None:
-    @tree.command(name="lol", description="LoL カウンターチャンピオンとビルドを提案します")
+    @tree.command(name="lol", description="LoL マッチアップの統計データを表示します")
     @app_commands.describe(
         champion="対面チャンピオン名（日本語・英語どちらでも可）",
         lane="レーン（top / jungle / mid / adc / support）省略時は自動判定",
@@ -163,7 +163,7 @@ async def build_counter_embed(
 
         embed.add_field(name=field_name, value=field_value, inline=False)
 
-    embed.set_footer(text="下のボタンでビルド画像を確認できます")
+    embed.set_footer(text="データはMaster以上のランク戦統計に基づきます。最終的な判断はプレイヤー自身が行うものです。")
     return embed
 
 
@@ -227,7 +227,7 @@ class BuildButton(discord.ui.Button):
         yt_url = script.youtube_url(name_en, self.enemy_en, lane_label)
 
         embed = discord.Embed(
-            title=f"{name_ja}（{name_en}） のおすすめビルド",
+            title=f"{name_ja}（{name_en}） のビルドデータ",
             color=discord.Color.blue(),
         )
         embed.set_thumbnail(url=core.cdimage_champion(self.counter["champion_id"]))

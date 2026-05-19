@@ -15,5 +15,8 @@ __pycache__/
 # キャッシュデータ（再生成可能）
 data/
 
+# 内部設計ドキュメント（外部非公開）
+docs/superpowers/
+
 # その他
 *.log
