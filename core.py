@@ -221,3 +221,7 @@ async def get_counters(db_path: str, champion_id: int, lane: str, limit: int = 5
 
 async def get_build(db_path: str, champion_id: int, enemy_id: int, lane: str) -> dict | None:
     return await database.get_build(db_path, champion_id, enemy_id, lane)
+
+
+async def get_builds(db_path: str, champion_id: int, enemy_id: int, lane: str, limit: int = 3) -> list[dict]:
+    return await database.get_builds(db_path, champion_id, enemy_id, lane, limit)
