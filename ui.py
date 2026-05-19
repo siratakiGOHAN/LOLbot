@@ -151,10 +151,6 @@ async def build_counter_embed(
     for rank, counter in enumerate(counters, start=1):
         field_name, field_value = script.format_stats_field(counter, rank)
 
-        # チャンピオン名をアイコン画像へのリンクにする
-        icon_url = core.cdimage_champion(counter["champion_id"])
-        field_name = f"[{field_name}]({icon_url})"
-
         # ビルドをテキストで表示（リンクなし）
         build = await core.get_build(db_path, counter["champion_id"], enemy_id, lane)
         if build and build["item_ids"]:
