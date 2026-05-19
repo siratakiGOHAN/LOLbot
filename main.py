@@ -39,11 +39,11 @@ class LoLBot(discord.Client):
     async def on_ready(self) -> None:
         print(f"[main] {self.user} としてログインしました")
         print(f"[main] DB パス: {Path(DB_PATH).resolve()}")
-        if not self.weekly_update.is_running():
-            self.weekly_update.start()
+        if not self.daily_update.is_running():
+            self.daily_update.start()
 
     @tasks.loop(hours=24)
-    async def weekly_update(self) -> None:
+    async def daily_update(self) -> None:
         print("[main] 日次データ更新を開始します")
         try:
             await data_collector.collect_high_elo_data(RIOT_API_KEY, DB_PATH)
@@ -52,8 +52,8 @@ class LoLBot(discord.Client):
         except Exception as e:
             print(f"[main] 日次データ更新エラー: {e}")
 
-    @weekly_update.before_loop
-    async def before_weekly_update(self) -> None:
+    @daily_update.before_loop
+    async def before_daily_update(self) -> None:
         await self.wait_until_ready()
 
 
