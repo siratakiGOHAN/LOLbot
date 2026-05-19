@@ -9,6 +9,8 @@ import image_builder
 import script
 
 VALID_LANES = {"top", "jungle", "mid", "adc", "support"}
+RANK_EMOJIS = {1: "🥇", 2: "🥈", 3: "🥉"}
+_FOOTER = "データはMaster以上のランク戦統計に基づきます。最終的な判断はプレイヤー自身が行うものです。"
 
 
 async def _run_update_task(
@@ -100,7 +102,7 @@ def setup_commands(tree: app_commands.CommandTree, db_path: str, riot_key: str) 
             )
             return
 
-        embed = await build_counter_embed(db_path, enemy_id, enemy_en, enemy_ja, lane_norm, counters)
+        embed = build_counter_embed(enemy_id, enemy_en, enemy_ja, lane_norm, counters)
         view = CounterDetailView(db_path, counters, enemy_id, enemy_en, lane_norm)
         await interaction.followup.send(embed=embed, view=view)
 
@@ -130,8 +132,7 @@ def setup_commands(tree: app_commands.CommandTree, db_path: str, riot_key: str) 
             await interaction.followup.send(script.MSG_PATCH_ERROR.format(error=e))
 
 
-async def build_counter_embed(
-    db_path: str,
+def build_counter_embed(
     enemy_id: int,
     enemy_en: str,
     enemy_ja: str,
@@ -141,25 +142,29 @@ async def build_counter_embed(
     lane_label = script.lane_display(lane)
     enemy_label = f"{enemy_ja}（{enemy_en}）" if enemy_ja != enemy_en else enemy_en
 
+    top = counters[0]
+    top_wr = top.get("wins", 0) / top.get("games", 1) if top.get("games") else 0
+    if top_wr >= 0.65:
+        color = discord.Color.red()
+    elif top_wr >= 0.50:
+        color = discord.Color.gold()
+    else:
+        color = discord.Color.blue()
+
     embed = discord.Embed(
         title=script.MSG_TITLE.format(enemy=enemy_label, lane=lane_label),
         description=script.MSG_DESCRIPTION.format(count=len(counters)),
-        color=discord.Color.gold(),
+        color=color,
     )
     embed.set_thumbnail(url=core.cdimage_champion(enemy_id))
 
     for rank, counter in enumerate(counters, start=1):
         field_name, field_value = script.format_stats_field(counter, rank)
-
-        # ビルドをテキストで表示（リンクなし）
-        build = await core.get_build(db_path, counter["champion_id"], enemy_id, lane)
-        if build and build["item_ids"]:
-            item_names = " / ".join(core.resolve_item_name(i) for i in build["item_ids"])
-            field_value += f"\n{script.MSG_BUILD_TITLE}: {item_names}"
-
+        if rank in RANK_EMOJIS:
+            field_name = f"{RANK_EMOJIS[rank]} {field_name}"
         embed.add_field(name=field_name, value=field_value, inline=False)
 
-    embed.set_footer(text="データはMaster以上のランク戦統計に基づきます。最終的な判断はプレイヤー自身が行うものです。")
+    embed.set_footer(text=_FOOTER)
     return embed
 
 
@@ -238,6 +243,8 @@ class BuildButton(discord.ui.Button):
             if rune_name:
                 lines.append(f"**キーストーン:** {rune_name}")
             lines.append(f"勝率: {win_pct:.1f}% ({build['games']}試合)")
+            if build["games"] < 5:
+                lines.append("⚠ サンプル数が少ないため参考程度")
 
             embed.add_field(
                 name=f"パターン {i}",
@@ -245,11 +252,7 @@ class BuildButton(discord.ui.Button):
                 inline=False,
             )
 
-        embed.add_field(
-            name=script.MSG_YOUTUBE_LABEL,
-            value=f"[動画を見る]({yt_url})",
-            inline=False,
-        )
+        embed.set_footer(text=_FOOTER)
 
         build_rows = []
         for b in builds:
@@ -262,10 +265,21 @@ class BuildButton(discord.ui.Button):
             })
 
         img_path = await image_builder.get_builds_image(build_rows)
+        yt_view = YoutubeView(yt_url)
 
         if img_path:
             file = discord.File(str(img_path), filename="build.png")
             embed.set_image(url="attachment://build.png")
-            await interaction.followup.send(file=file, embed=embed, ephemeral=True)
+            await interaction.followup.send(file=file, embed=embed, view=yt_view, ephemeral=True)
         else:
-            await interaction.followup.send(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed, view=yt_view, ephemeral=True)
+
+
+class YoutubeView(discord.ui.View):
+    def __init__(self, yt_url: str) -> None:
+        super().__init__(timeout=None)
+        self.add_item(discord.ui.Button(
+            label="▶ YouTube でマッチアップ動画を見る",
+            style=discord.ButtonStyle.link,
+            url=yt_url,
+        ))

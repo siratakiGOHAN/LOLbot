@@ -61,9 +61,9 @@ def format_stats_field(counter: dict, rank: int) -> tuple[str, str]:
 
     field_name = MSG_COUNTER_FIELD_TITLE.format(rank=rank, name_ja=name_ja, name_en=name_en)
     field_value = (
-        f"勝率: **{format_winrate(wins, games)}** ({games} 試合)\n"
-        f"ピック率: {format_pick_rate(pick_count, total_lane_games)}\n"
-        f"BAN率: {format_ban_rate(ban_count, ban_total_games)}"
+        f"勝率: **{format_winrate(wins, games)}** ({games} 試合)"
+        f"　｜　ピック率: {format_pick_rate(pick_count, total_lane_games)}"
+        f"　｜　BAN率: {format_ban_rate(ban_count, ban_total_games)}"
     )
     return field_name, field_value
 
