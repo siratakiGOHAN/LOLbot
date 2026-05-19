@@ -73,12 +73,32 @@ async def test_upsert_ban_stats_accumulates(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_get_build_returns_item_ids():
-    """Darius(122) vs Aatrox(266) top のビルドが正しく返る。"""
+async def test_get_builds_returns_multiple():
+    """get_builds が勝率降順で最大3件返る。"""
+    builds = await database.get_builds(TEST_DB, 122, 266, "top")
+    assert len(builds) == 3
+    win_rates = [b["wins"] / b["games"] for b in builds]
+    assert win_rates == sorted(win_rates, reverse=True)
+
+
+@pytest.mark.asyncio
+async def test_get_builds_item_ids_are_list():
+    """get_builds の item_ids が list[str] で返る。"""
+    builds = await database.get_builds(TEST_DB, 122, 266, "top")
+    assert isinstance(builds[0]["item_ids"], list)
+    assert builds[0]["item_ids"] == ["3071", "3053", "6333"]
+
+
+@pytest.mark.asyncio
+async def test_get_build_backward_compatible():
+    """get_build（後方互換）が勝率最上位のビルドを1件返す。"""
     build = await database.get_build(TEST_DB, 122, 266, "top")
     assert build is not None
-    assert isinstance(build["item_ids"], list)
-    assert "3071" in build["item_ids"]
+    # 新スキーマでは各ビルドパターンは独立している
+    # 勝率が最高なのはパターン1: item_ids=["3071", "3053", "6333"], wins=65, games=100 (65%)
+    assert build["item_ids"] == ["3071", "3053", "6333"]
+    assert build["wins"] == 65
+    assert build["games"] == 100
 
 
 @pytest.mark.asyncio

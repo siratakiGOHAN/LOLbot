@@ -11,6 +11,13 @@ async def init_db(db_path: str) -> None:
             await db.execute("DROP TABLE IF EXISTS ban_stats")
             await db.commit()
 
+        # builds 旧スキーマ移行（item_ids が PK に含まれていなければ DROP して再作成）
+        async with db.execute("PRAGMA table_info(builds)") as cursor:
+            build_cols = {row[1]: row[5] for row in await cursor.fetchall()}
+        if build_cols and build_cols.get("item_ids", 0) == 0:
+            await db.execute("DROP TABLE IF EXISTS builds")
+            await db.commit()
+
         await db.executescript("""
             CREATE TABLE IF NOT EXISTS champions (
                 champion_id   INTEGER PRIMARY KEY,
@@ -48,7 +55,7 @@ async def init_db(db_path: str) -> None:
                 wins          INTEGER DEFAULT 0,
                 games         INTEGER DEFAULT 0,
                 updated_at    TEXT,
-                PRIMARY KEY (champion_id, enemy_id, lane)
+                PRIMARY KEY (champion_id, enemy_id, lane, item_ids)
             );
 
             CREATE TABLE IF NOT EXISTS ban_stats (
@@ -93,8 +100,14 @@ async def get_counters(db_path: str, champion_id: int, lane: str, limit: int = 5
     return [dict(row) for row in rows]
 
 
-async def get_build(db_path: str, champion_id: int, enemy_id: int, lane: str) -> dict | None:
-    """チャンピオン×対面×レーンのビルド情報を返す。"""
+async def get_builds(
+    db_path: str,
+    champion_id: int,
+    enemy_id: int,
+    lane: str,
+    limit: int = 3,
+) -> list[dict]:
+    """チャンピオン×対面×レーンのビルドを勝率降順で最大 limit 件返す。"""
     async with aiosqlite.connect(db_path) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
@@ -102,15 +115,24 @@ async def get_build(db_path: str, champion_id: int, enemy_id: int, lane: str) ->
             SELECT item_ids, keystone_id, wins, games
             FROM builds
             WHERE champion_id = ? AND enemy_id = ? AND lane = ?
+            ORDER BY CAST(wins AS REAL) / games DESC
+            LIMIT ?
             """,
-            (champion_id, enemy_id, lane),
+            (champion_id, enemy_id, lane, limit),
         ) as cursor:
-            row = await cursor.fetchone()
-    if row is None:
-        return None
-    result = dict(row)
-    result["item_ids"] = result["item_ids"].split(",") if result["item_ids"] else []
-    return result
+            rows = await cursor.fetchall()
+    results = []
+    for row in rows:
+        r = dict(row)
+        r["item_ids"] = r["item_ids"].split(",") if r["item_ids"] else []
+        results.append(r)
+    return results
+
+
+async def get_build(db_path: str, champion_id: int, enemy_id: int, lane: str) -> dict | None:
+    """後方互換: 勝率最上位のビルドを1件返す。"""
+    builds = await get_builds(db_path, champion_id, enemy_id, lane, limit=1)
+    return builds[0] if builds else None
 
 
 
@@ -187,9 +209,7 @@ async def upsert_build(
             """
             INSERT INTO builds (champion_id, enemy_id, lane, item_ids, keystone_id, wins, games, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(champion_id, enemy_id, lane) DO UPDATE SET
-                item_ids = excluded.item_ids,
-                keystone_id = excluded.keystone_id,
+            ON CONFLICT(champion_id, enemy_id, lane, item_ids) DO UPDATE SET
                 wins = wins + excluded.wins,
                 games = games + excluded.games,
                 updated_at = excluded.updated_at
