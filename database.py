@@ -1,0 +1,244 @@
+import aiosqlite
+from datetime import datetime, timezone
+
+
+async def init_db(db_path: str) -> None:
+    async with aiosqlite.connect(db_path) as db:
+        # ban_stats 旧スキーマ移行（lane 列があれば DROP して再作成）
+        async with db.execute("PRAGMA table_info(ban_stats)") as cursor:
+            cols = [row[1] for row in await cursor.fetchall()]
+        if "lane" in cols:
+            await db.execute("DROP TABLE IF EXISTS ban_stats")
+            await db.commit()
+
+        await db.executescript("""
+            CREATE TABLE IF NOT EXISTS champions (
+                champion_id   INTEGER PRIMARY KEY,
+                name_en       TEXT NOT NULL,
+                name_ja       TEXT,
+                updated_at    TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS champion_lane_stats (
+                champion_id   INTEGER,
+                lane          TEXT,
+                wins          INTEGER DEFAULT 0,
+                games         INTEGER DEFAULT 0,
+                pick_count    INTEGER DEFAULT 0,
+                updated_at    TEXT,
+                PRIMARY KEY (champion_id, lane)
+            );
+
+            CREATE TABLE IF NOT EXISTS matchups (
+                champion_id   INTEGER,
+                enemy_id      INTEGER,
+                lane          TEXT,
+                wins          INTEGER DEFAULT 0,
+                games         INTEGER DEFAULT 0,
+                updated_at    TEXT,
+                PRIMARY KEY (champion_id, enemy_id, lane)
+            );
+
+            CREATE TABLE IF NOT EXISTS builds (
+                champion_id   INTEGER,
+                enemy_id      INTEGER,
+                lane          TEXT,
+                item_ids      TEXT,
+                keystone_id   INTEGER,
+                wins          INTEGER DEFAULT 0,
+                games         INTEGER DEFAULT 0,
+                updated_at    TEXT,
+                PRIMARY KEY (champion_id, enemy_id, lane)
+            );
+
+            CREATE TABLE IF NOT EXISTS ban_stats (
+                champion_id   INTEGER PRIMARY KEY,
+                ban_count     INTEGER DEFAULT 0,
+                updated_at    TEXT
+            );
+        """)
+        await db.commit()
+
+
+async def get_counters(db_path: str, champion_id: int, lane: str, limit: int = 5) -> list[dict]:
+    """指定チャンピオン×レーンに対して勝率上位のカウンター一覧を返す。"""
+    async with aiosqlite.connect(db_path) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """
+            SELECT
+                m.champion_id,
+                c.name_en,
+                c.name_ja,
+                m.wins,
+                m.games,
+                CAST(m.wins AS REAL) / m.games AS win_rate,
+                COALESCE(cls.pick_count, 0) AS pick_count,
+                COALESCE(cls.games, 0) AS total_lane_games,
+                COALESCE(bs.ban_count, 0) AS ban_count,
+                COALESCE(cls.games, 0) AS ban_total_games
+            FROM matchups m
+            JOIN champions c ON m.champion_id = c.champion_id
+            LEFT JOIN champion_lane_stats cls
+                ON m.champion_id = cls.champion_id AND cls.lane = m.lane
+            LEFT JOIN ban_stats bs
+                ON m.champion_id = bs.champion_id
+            WHERE m.enemy_id = ? AND m.lane = ? AND m.games >= 3
+            ORDER BY win_rate DESC
+            LIMIT ?
+            """,
+            (champion_id, lane, limit),
+        ) as cursor:
+            rows = await cursor.fetchall()
+    return [dict(row) for row in rows]
+
+
+async def get_build(db_path: str, champion_id: int, enemy_id: int, lane: str) -> dict | None:
+    """チャンピオン×対面×レーンのビルド情報を返す。"""
+    async with aiosqlite.connect(db_path) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """
+            SELECT item_ids, keystone_id, wins, games
+            FROM builds
+            WHERE champion_id = ? AND enemy_id = ? AND lane = ?
+            """,
+            (champion_id, enemy_id, lane),
+        ) as cursor:
+            row = await cursor.fetchone()
+    if row is None:
+        return None
+    result = dict(row)
+    result["item_ids"] = result["item_ids"].split(",") if result["item_ids"] else []
+    return result
+
+
+
+async def get_main_lane(db_path: str, champion_id: int) -> str | None:
+    """champion_lane_statsのpick_countが最多のレーンを返す。"""
+    async with aiosqlite.connect(db_path) as db:
+        async with db.execute(
+            """
+            SELECT lane FROM champion_lane_stats
+            WHERE champion_id = ?
+            ORDER BY pick_count DESC
+            LIMIT 1
+            """,
+            (champion_id,),
+        ) as cursor:
+            row = await cursor.fetchone()
+    return row[0] if row else None
+
+
+async def upsert_champion(db_path: str, champion_id: int, name_en: str, name_ja: str | None = None) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    async with aiosqlite.connect(db_path) as db:
+        await db.execute(
+            """
+            INSERT INTO champions (champion_id, name_en, name_ja, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(champion_id) DO UPDATE SET
+                name_en = excluded.name_en,
+                name_ja = excluded.name_ja,
+                updated_at = excluded.updated_at
+            """,
+            (champion_id, name_en, name_ja, now),
+        )
+        await db.commit()
+
+
+async def upsert_matchup(
+    db_path: str,
+    champion_id: int,
+    enemy_id: int,
+    lane: str,
+    wins: int,
+    games: int,
+) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    async with aiosqlite.connect(db_path) as db:
+        await db.execute(
+            """
+            INSERT INTO matchups (champion_id, enemy_id, lane, wins, games, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(champion_id, enemy_id, lane) DO UPDATE SET
+                wins = wins + excluded.wins,
+                games = games + excluded.games,
+                updated_at = excluded.updated_at
+            """,
+            (champion_id, enemy_id, lane, wins, games, now),
+        )
+        await db.commit()
+
+
+async def upsert_build(
+    db_path: str,
+    champion_id: int,
+    enemy_id: int,
+    lane: str,
+    item_ids: list[str],
+    keystone_id: int,
+    wins: int,
+    games: int,
+) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    async with aiosqlite.connect(db_path) as db:
+        await db.execute(
+            """
+            INSERT INTO builds (champion_id, enemy_id, lane, item_ids, keystone_id, wins, games, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(champion_id, enemy_id, lane) DO UPDATE SET
+                item_ids = excluded.item_ids,
+                keystone_id = excluded.keystone_id,
+                wins = wins + excluded.wins,
+                games = games + excluded.games,
+                updated_at = excluded.updated_at
+            """,
+            (champion_id, enemy_id, lane, ",".join(item_ids), keystone_id, wins, games, now),
+        )
+        await db.commit()
+
+
+async def upsert_lane_stats(
+    db_path: str,
+    champion_id: int,
+    lane: str,
+    wins: int,
+    games: int,
+    pick_count: int,
+) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    async with aiosqlite.connect(db_path) as db:
+        await db.execute(
+            """
+            INSERT INTO champion_lane_stats (champion_id, lane, wins, games, pick_count, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(champion_id, lane) DO UPDATE SET
+                wins = wins + excluded.wins,
+                games = games + excluded.games,
+                pick_count = pick_count + excluded.pick_count,
+                updated_at = excluded.updated_at
+            """,
+            (champion_id, lane, wins, games, pick_count, now),
+        )
+        await db.commit()
+
+
+async def upsert_ban_stats(
+    db_path: str,
+    champion_id: int,
+    ban_count: int = 1,
+) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    async with aiosqlite.connect(db_path) as db:
+        await db.execute(
+            """
+            INSERT INTO ban_stats (champion_id, ban_count, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(champion_id) DO UPDATE SET
+                ban_count  = ban_count + excluded.ban_count,
+                updated_at = excluded.updated_at
+            """,
+            (champion_id, ban_count, now),
+        )
+        await db.commit()

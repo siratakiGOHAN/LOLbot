@@ -1,0 +1,19 @@
+# 環境変数・シークレット
+.env
+
+# データベース
+*.db
+*.db-shm
+*.db-wal
+
+# Pythonキャッシュ
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# キャッシュデータ（再生成可能）
+data/
+
+# その他
+*.log
