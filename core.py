@@ -16,11 +16,13 @@ CDIMAGE_CHAMP_URL = (
     "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data"
     "/global/default/v1/champion-icons/{champion_id}.png"
 )
-DDRAGON_ITEM_IMG_URL = "https://ddragon.leagueoflegends.com/cdn/{version}/img/item/{item_id}.png"
+DDRAGON_ITEM_IMG_URL  = "https://ddragon.leagueoflegends.com/cdn/{version}/img/item/{item_id}.png"
+DDRAGON_CHAMP_IMG_URL = "https://ddragon.leagueoflegends.com/cdn/{version}/img/champion/{key}.png"
 
 _champion_cache: dict | None = None
 _item_cache: dict | None = None   # {item_id_str: {"name": str, "version": str}}
 _rune_cache: dict | None = None   # {rune_id_str: {"name": str, "icon": str}}
+_ddragon_version: str | None = None
 
 
 async def _latest_ddragon_version(session: aiohttp.ClientSession) -> str:
@@ -71,7 +73,7 @@ async def load_champion_cache(force: bool = False) -> dict:
 
 async def load_item_cache(force: bool = False) -> dict:
     """Data Dragon から全アイテムデータを取得してキャッシュする。"""
-    global _item_cache
+    global _item_cache, _ddragon_version
 
     if not force and _item_cache is not None:
         return _item_cache
@@ -79,6 +81,8 @@ async def load_item_cache(force: bool = False) -> dict:
     if not force and ITEM_CACHE_PATH.exists():
         with open(ITEM_CACHE_PATH, encoding="utf-8") as f:
             _item_cache = json.load(f)
+        if _item_cache:
+            _ddragon_version = next(iter(_item_cache.values())).get("version")
         return _item_cache
 
     async with aiohttp.ClientSession() as session:
@@ -100,6 +104,7 @@ async def load_item_cache(force: bool = False) -> dict:
         json.dump(cache, f, ensure_ascii=False, indent=2)
 
     _item_cache = cache
+    _ddragon_version = version
     return cache
 
 
@@ -208,6 +213,10 @@ def ddragon_item_image(item_id: int | str) -> str | None:
 
 
 def cdimage_champion(champion_id: int) -> str:
+    if _champion_cache is not None and _ddragon_version is not None:
+        entry = _champion_cache.get(str(champion_id))
+        if entry:
+            return DDRAGON_CHAMP_IMG_URL.format(version=_ddragon_version, key=entry["name_en"])
     return CDIMAGE_CHAMP_URL.format(champion_id=champion_id)
 
 

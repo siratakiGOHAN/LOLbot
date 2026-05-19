@@ -34,10 +34,12 @@ def inject_cache():
     core._champion_cache = MOCK_CACHE
     core._item_cache = MOCK_ITEM_CACHE
     core._rune_cache = MOCK_RUNE_CACHE
+    core._ddragon_version = "15.1.1"
     yield
     core._champion_cache = None
     core._item_cache = None
     core._rune_cache = None
+    core._ddragon_version = None
 
 
 def test_resolve_champion_english():
@@ -73,10 +75,11 @@ def test_resolve_champion_unknown():
 
 
 def test_cdimage_champion_url():
-    """cDragon チャンピオンアイコン URL が正しく生成される。"""
+    """Data Dragon チャンピオンアイコン URL が正しく生成される。"""
     url = core.cdimage_champion(266)
-    assert "266" in url
-    assert url.startswith("https://raw.communitydragon.org")
+    assert "ddragon.leagueoflegends.com" in url
+    assert "Aatrox" in url
+    assert "15.1.1" in url
     assert url.endswith(".png")
 
 
