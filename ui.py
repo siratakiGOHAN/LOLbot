@@ -216,44 +216,55 @@ class BuildButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer(ephemeral=True)
 
-        build = await core.get_build(self.db_path, self.counter["champion_id"], self.enemy_id, self.lane)
-        if not build or not build["item_ids"]:
+        builds = await core.get_builds(self.db_path, self.counter["champion_id"], self.enemy_id, self.lane)
+        if not builds:
             await interaction.followup.send(script.MSG_NO_DATA, ephemeral=True)
             return
 
-        icon_url_map = {
-            item_id: core.ddragon_item_image(item_id)
-            for item_id in build["item_ids"]
-        }
-        keystone_id  = str(build["keystone_id"]) if build.get("keystone_id") else None
-        keystone_url = core.ddragon_rune_image(keystone_id) if keystone_id else None
-
-        img_path = await image_builder.get_build_image(
-            build["item_ids"], icon_url_map, keystone_id, keystone_url
-        )
-
         name_ja = self.counter.get("name_ja") or self.counter.get("name_en", "")
         name_en = self.counter.get("name_en", "")
-        item_names = " / ".join(core.resolve_item_name(i) for i in build["item_ids"])
-        rune_name  = core.resolve_rune_name(keystone_id) if keystone_id else None
-
         lane_label = script.lane_display(self.lane)
         yt_url = script.youtube_url(name_en, self.enemy_en, lane_label)
 
-        desc_lines = [f"**コアアイテム:** {item_names}"]
-        if rune_name:
-            desc_lines.append(f"**キーストーン:** {rune_name}")
-
         embed = discord.Embed(
             title=f"{name_ja}（{name_en}） のおすすめビルド",
-            description="\n".join(desc_lines),
             color=discord.Color.blue(),
         )
         embed.set_thumbnail(url=core.cdimage_champion(self.counter["champion_id"]))
+
+        for i, build in enumerate(builds, start=1):
+            item_names = " / ".join(core.resolve_item_name(x) for x in build["item_ids"])
+            keystone_id = str(build["keystone_id"]) if build.get("keystone_id") else None
+            rune_name = core.resolve_rune_name(keystone_id) if keystone_id else None
+            win_pct = build["wins"] / build["games"] * 100 if build["games"] else 0
+
+            lines = [f"**アイテム:** {item_names}"]
+            if rune_name:
+                lines.append(f"**キーストーン:** {rune_name}")
+            lines.append(f"勝率: {win_pct:.1f}% ({build['games']}試合)")
+
+            embed.add_field(
+                name=f"パターン {i}",
+                value="\n".join(lines),
+                inline=False,
+            )
+
         embed.add_field(
             name=script.MSG_YOUTUBE_LABEL,
             value=f"[動画を見る]({yt_url})",
             inline=False,
+        )
+
+        first_build = builds[0]
+        icon_url_map = {
+            item_id: core.ddragon_item_image(item_id)
+            for item_id in first_build["item_ids"]
+        }
+        keystone_id = str(first_build["keystone_id"]) if first_build.get("keystone_id") else None
+        keystone_url = core.ddragon_rune_image(keystone_id) if keystone_id else None
+
+        img_path = await image_builder.get_build_image(
+            first_build["item_ids"], icon_url_map, keystone_id, keystone_url
         )
 
         if img_path:
