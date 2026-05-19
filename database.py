@@ -115,7 +115,7 @@ async def get_builds(
             SELECT item_ids, keystone_id, wins, games
             FROM builds
             WHERE champion_id = ? AND enemy_id = ? AND lane = ?
-            ORDER BY CAST(wins AS REAL) / games DESC
+            ORDER BY CASE WHEN games > 0 THEN CAST(wins AS REAL) / games ELSE 0 END DESC
             LIMIT ?
             """,
             (champion_id, enemy_id, lane, limit),
