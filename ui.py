@@ -11,6 +11,7 @@ import script
 VALID_LANES = {"top", "jungle", "mid", "adc", "support"}
 RANK_EMOJIS = {1: "🥇", 2: "🥈", 3: "🥉"}
 _FOOTER = "データはMaster以上のランク戦統計に基づきます。最終的な判断はプレイヤー自身が行うものです。"
+_background_tasks: set[asyncio.Task] = set()
 
 
 async def _run_update_task(
@@ -113,7 +114,9 @@ def setup_commands(tree: app_commands.CommandTree, db_path: str, riot_key: str) 
             return
 
         await interaction.response.send_message(script.MSG_UPDATE_STARTED)
-        asyncio.create_task(_run_update_task(riot_key, db_path, interaction.channel))
+        task = asyncio.create_task(_run_update_task(riot_key, db_path, interaction.channel))
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
 
     @tree.command(name="lolpatch", description="【管理者】パッチ適用後に実行。画像キャッシュとData Dragonキャッシュをリセットします")
     async def lolpatch_command(interaction: discord.Interaction) -> None:
