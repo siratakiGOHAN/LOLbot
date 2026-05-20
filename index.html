@@ -9,20 +9,41 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Rajdhani:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --font-heading: 'Cinzel', 'Noto Sans JP', serif;
+      --font-heading: 'Rajdhani', 'Noto Sans JP', sans-serif;
       --font-sub:     'Rajdhani', 'Noto Sans JP', sans-serif;
       --font-body:    'Inter', 'Noto Sans JP', sans-serif;
+
+      /* ---- Fan-site palette (LoLインスパイア・非公式差別化) ---- */
+      /* アクセントカラーを金→青緑系に移行してLoL公式との差別化 */
+      --accent: #3CBFB0;          /* ティール：LoL公式にない色 */
+      --accent-light: #7EE8DC;
+      --accent-dark: #1F8A7E;
+      --accent-muted: rgba(60,191,176,0.15);
+
+      /* LoLの「金」は使うが脇役に格下げ */
       --gold: #C89B3C;
       --gold-light: #F0E6C0;
       --gold-dark: #785A28;
-      --navy: #0A1428;
-      --navy-mid: #091428;
-      --navy-light: #1E2A3A;
-      --blue-dark: #0C1726;
-      --text-primary: #F0E6C0;
-      --text-secondary: #A09070;
-      --border: #785A28;
-      --bg-card: #0D1B2E;
+
+      /* 背景は「漆黒の紺」からグレー寄りのダーク系に変更 */
+      --bg-base: #141820;         /* LoLの#0A1428より明るく青みを抑えた */
+      --bg-mid:  #1A1F2B;
+      --bg-card: #1E2535;
+      --bg-dark: #0E1118;
+
+      /* テキスト：クリームから明るいグレーホワイトへ */
+      --text-primary:   #E8EAF0;  /* LoLの#F0E6C0より青白く・クリーム感を排除 */
+      --text-secondary: #8A96A8;
+      --text-muted:     #5A6478;
+
+      /* ボーダー：金ではなくティール系 */
+      --border:       #2A3548;
+      --border-accent: var(--accent-dark);
+
+      /* 非公式バナー専用カラー */
+      --fan-banner-bg: #1A2A20;
+      --fan-banner-border: #2E7D4F;
+      --fan-banner-text: #6FCF97;
     }
 
     * {
@@ -32,7 +53,7 @@
     }
 
     body {
-      background-color: var(--navy);
+      background-color: var(--bg-base);
       color: var(--text-primary);
       font-family: var(--font-body);
       line-height: 1.7;
@@ -40,22 +61,46 @@
     }
 
     a {
-      color: var(--gold);
+      color: var(--accent);
       text-decoration: none;
     }
 
     a:hover {
-      color: var(--gold-light);
+      color: var(--accent-light);
       text-decoration: underline;
+    }
+
+    /* ===================== FAN-SITE BANNER ===================== */
+    .unofficial-banner {
+      background: var(--fan-banner-bg);
+      border-bottom: 1px solid var(--fan-banner-border);
+      padding: 7px 20px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+
+    .unofficial-banner p {
+      font-family: var(--font-sub);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--fan-banner-text);
+      letter-spacing: 0.08em;
+      margin: 0;
+    }
+
+    .unofficial-banner strong {
+      color: #A8E6C0;
     }
 
     /* ===================== HEADER ===================== */
     header {
-      background: linear-gradient(180deg, #000000 0%, var(--navy-mid) 100%);
-      border-bottom: 2px solid var(--gold-dark);
+      background: var(--bg-dark);
+      border-bottom: 2px solid var(--border-accent);
       padding: 0 20px;
       position: sticky;
-      top: 0;
+      top: 33px; /* bannerの高さ分下げる */
       z-index: 100;
     }
 
@@ -72,12 +117,30 @@
       font-family: var(--font-heading);
       font-size: 1.2rem;
       font-weight: 700;
-      color: var(--gold);
+      color: var(--accent);
       letter-spacing: 0.08em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .nav-logo span {
       color: var(--text-primary);
+    }
+
+    /* ナビロゴに「非公式」バッジ */
+    .nav-logo .fan-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      background: var(--fan-banner-bg);
+      border: 1px solid var(--fan-banner-border);
+      color: var(--fan-banner-text);
+      padding: 2px 7px;
+      border-radius: 99px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      vertical-align: middle;
+      line-height: 1.6;
     }
 
     .nav-links {
@@ -97,15 +160,15 @@
     }
 
     .nav-links a:hover {
-      color: var(--gold);
+      color: var(--accent);
       text-decoration: none;
     }
 
     /* ===================== HERO ===================== */
     .hero {
       background:
-        linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(10,20,40,0.9) 100%),
-        radial-gradient(ellipse at 50% 0%, #1a2a4a 0%, #050d1a 70%);
+        linear-gradient(180deg, rgba(10,12,18,0.85) 0%, rgba(20,24,32,0.95) 100%),
+        radial-gradient(ellipse at 50% 0%, #1a2535 0%, #0e1118 70%);
       padding: 100px 20px 80px;
       text-align: center;
       border-bottom: 1px solid var(--border);
@@ -113,6 +176,7 @@
       overflow: hidden;
     }
 
+    /* グリッドパターンをティール系に変更 */
     .hero::before {
       content: '';
       position: absolute;
@@ -121,24 +185,26 @@
         0deg,
         transparent,
         transparent 2px,
-        rgba(200,155,60,0.03) 2px,
-        rgba(200,155,60,0.03) 4px
+        rgba(60,191,176,0.025) 2px,
+        rgba(60,191,176,0.025) 4px
       );
       pointer-events: none;
     }
 
     .hero-badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       font-family: var(--font-sub);
-      background: rgba(200,155,60,0.15);
-      border: 1px solid var(--gold-dark);
-      color: var(--gold);
+      background: var(--accent-muted);
+      border: 1px solid var(--accent-dark);
+      color: var(--accent);
       font-size: 0.75rem;
       font-weight: 600;
       letter-spacing: 0.2em;
       text-transform: uppercase;
       padding: 5px 16px;
-      border-radius: 2px;
+      border-radius: 4px;
       margin-bottom: 24px;
     }
 
@@ -146,15 +212,16 @@
       font-family: var(--font-heading);
       font-size: clamp(2.2rem, 6vw, 4rem);
       font-weight: 900;
-      color: var(--gold);
+      /* LoLの金を廃止→テキストをホワイト系に、アクセントはティール */
+      color: var(--text-primary);
       letter-spacing: 0.08em;
       text-transform: uppercase;
       margin-bottom: 8px;
-      text-shadow: 0 0 40px rgba(200,155,60,0.4);
+      text-shadow: 0 0 40px rgba(60,191,176,0.25);
     }
 
     .hero h1 span {
-      color: var(--text-primary);
+      color: var(--accent);
     }
 
     .hero-subtitle {
@@ -167,7 +234,7 @@
     .hero-desc {
       max-width: 600px;
       margin: 0 auto 36px;
-      color: #8899aa;
+      color: var(--text-secondary);
       font-size: 1rem;
       line-height: 1.8;
     }
@@ -182,7 +249,7 @@
     .btn {
       display: inline-block;
       padding: 13px 32px;
-      border-radius: 3px;
+      border-radius: 5px;
       font-family: var(--font-sub);
       font-size: 0.95rem;
       font-weight: 700;
@@ -193,28 +260,30 @@
       border: none;
     }
 
+    /* プライマリボタン：ティール系グラデーション */
     .btn-primary {
-      background: linear-gradient(135deg, var(--gold-dark), var(--gold));
-      color: var(--navy);
+      background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+      color: #0e1118;
     }
 
     .btn-primary:hover {
-      background: linear-gradient(135deg, var(--gold), var(--gold-light));
-      color: var(--navy);
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      color: #0e1118;
       text-decoration: none;
       transform: translateY(-1px);
-      box-shadow: 0 4px 20px rgba(200,155,60,0.4);
+      box-shadow: 0 4px 20px rgba(60,191,176,0.35);
     }
 
+    /* セカンダリボタン：ティール系アウトライン */
     .btn-secondary {
       background: transparent;
-      border: 1px solid var(--gold-dark);
-      color: var(--gold);
+      border: 1px solid var(--accent-dark);
+      color: var(--accent);
     }
 
     .btn-secondary:hover {
-      background: rgba(200,155,60,0.1);
-      color: var(--gold-light);
+      background: var(--accent-muted);
+      color: var(--accent-light);
       text-decoration: none;
       transform: translateY(-1px);
     }
@@ -237,7 +306,7 @@
     .section-label {
       display: inline-block;
       font-family: var(--font-sub);
-      color: var(--gold);
+      color: var(--accent);
       font-size: 0.75rem;
       font-weight: 600;
       letter-spacing: 0.25em;
@@ -257,7 +326,7 @@
     .section-divider {
       width: 60px;
       height: 2px;
-      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
       margin: 16px auto;
     }
 
@@ -269,7 +338,7 @@
 
     /* ===================== FEATURES ===================== */
     .features-section {
-      background: var(--blue-dark);
+      background: var(--bg-mid);
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
     }
@@ -283,13 +352,13 @@
     .feature-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 4px;
+      border-radius: 8px;
       padding: 32px 24px;
       transition: border-color 0.2s, transform 0.2s;
     }
 
     .feature-card:hover {
-      border-color: var(--gold);
+      border-color: var(--accent-dark);
       transform: translateY(-3px);
     }
 
@@ -302,7 +371,7 @@
       font-family: var(--font-sub);
       font-size: 1.1rem;
       font-weight: 700;
-      color: var(--gold);
+      color: var(--accent);
       margin-bottom: 10px;
       letter-spacing: 0.04em;
     }
@@ -316,13 +385,13 @@
 
     /* ===================== COMMAND ===================== */
     .command-section {
-      background: var(--navy);
+      background: var(--bg-base);
     }
 
     .command-demo {
-      background: #0a0f1a;
+      background: var(--bg-dark);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 28px 32px;
       max-width: 640px;
       margin: 0 auto 40px;
@@ -337,7 +406,7 @@
     }
 
     .cmd-prompt {
-      color: var(--gold);
+      color: var(--accent);
       font-size: 1.1rem;
     }
 
@@ -355,7 +424,7 @@
     }
 
     .command-examples {
-      border-top: 1px solid rgba(120,90,40,0.3);
+      border-top: 1px solid var(--border);
       padding-top: 16px;
       display: flex;
       flex-direction: column;
@@ -373,7 +442,7 @@
 
     /* ===================== SCREENSHOTS ===================== */
     .screenshots-section {
-      background: var(--blue-dark);
+      background: var(--bg-mid);
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
     }
@@ -387,20 +456,20 @@
     .screenshot-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 8px;
       overflow: hidden;
       transition: border-color 0.2s, transform 0.2s;
     }
 
     .screenshot-card:hover {
-      border-color: var(--gold);
+      border-color: var(--accent-dark);
       transform: translateY(-3px);
     }
 
     .screenshot-card img {
       width: 100%;
       display: block;
-      background: var(--navy-light);
+      background: var(--bg-mid);
     }
 
     .screenshot-caption {
@@ -408,12 +477,12 @@
       font-size: 0.85rem;
       color: var(--text-secondary);
       text-align: center;
-      border-top: 1px solid rgba(120,90,40,0.3);
+      border-top: 1px solid var(--border);
     }
 
     /* ===================== STATS ===================== */
     .stats-section {
-      background: var(--navy);
+      background: var(--bg-base);
       text-align: center;
     }
 
@@ -425,15 +494,16 @@
 
     .stat-item {
       padding: 24px;
-      border: 1px solid rgba(120,90,40,0.4);
-      border-radius: 4px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-card);
     }
 
     .stat-number {
       font-family: var(--font-heading);
       font-size: 2.5rem;
       font-weight: 800;
-      color: var(--gold);
+      color: var(--accent);
       display: block;
       margin-bottom: 6px;
     }
@@ -448,7 +518,7 @@
 
     /* ===================== POLICY SECTIONS ===================== */
     .policy-section {
-      background: var(--blue-dark);
+      background: var(--bg-mid);
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
     }
@@ -464,7 +534,7 @@
 
     .policy-content h3 {
       font-size: 1.1rem;
-      color: var(--gold);
+      color: var(--accent);
       margin: 28px 0 10px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -477,7 +547,7 @@
     .policy-content p,
     .policy-content li {
       font-size: 0.92rem;
-      color: #b0a080;
+      color: var(--text-secondary);
       line-height: 1.9;
       letter-spacing: 0.03em;
       margin-bottom: 8px;
@@ -490,14 +560,14 @@
     .policy-updated {
       display: inline-block;
       font-size: 0.8rem;
-      color: rgba(160,144,112,0.6);
+      color: var(--text-muted);
       margin-bottom: 24px;
     }
 
     /* ===================== FOOTER ===================== */
     footer {
-      background: #000000;
-      border-top: 2px solid var(--gold-dark);
+      background: var(--bg-dark);
+      border-top: 2px solid var(--border-accent);
       padding: 40px 20px 28px;
       text-align: center;
     }
@@ -506,7 +576,7 @@
       font-family: var(--font-heading);
       font-size: 1.2rem;
       font-weight: 700;
-      color: var(--gold);
+      color: var(--accent);
       letter-spacing: 0.1em;
       margin-bottom: 16px;
     }
@@ -527,21 +597,48 @@
     }
 
     .footer-links a:hover {
-      color: var(--gold);
+      color: var(--accent);
       text-decoration: none;
+    }
+
+    /* フッターの非公式免責ボックス */
+    .footer-unofficial-box {
+      display: inline-flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--fan-banner-bg);
+      border: 1px solid var(--fan-banner-border);
+      border-radius: 6px;
+      padding: 12px 20px;
+      max-width: 700px;
+      margin: 0 auto 20px;
+      text-align: left;
+    }
+
+    .footer-unofficial-box .disclaimer-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .footer-unofficial-box p {
+      font-size: 0.78rem;
+      color: var(--fan-banner-text);
+      line-height: 1.7;
+      margin: 0;
     }
 
     .footer-riot {
       max-width: 700px;
       margin: 0 auto 16px;
       font-size: 0.78rem;
-      color: rgba(160,144,112,0.5);
+      color: var(--text-muted);
       line-height: 1.7;
     }
 
     .footer-copy {
       font-size: 0.78rem;
-      color: rgba(160,144,112,0.35);
+      color: var(--text-muted);
     }
 
     /* ===================== RESPONSIVE ===================== */
@@ -550,8 +647,12 @@
         display: none;
       }
 
+      header {
+        top: 30px; /* モバイルでもbanner分下げる */
+      }
+
       .hero {
-        padding: 72px 20px 60px;
+        padding: 80px 20px 60px;
       }
 
       .btn-group {
@@ -566,20 +667,37 @@
       section {
         padding: 52px 16px;
       }
+
+      .footer-unofficial-box {
+        flex-direction: column;
+        gap: 6px;
+      }
     }
 
     /* ===================== ANCHOR OFFSET ===================== */
     [id] {
-      scroll-margin-top: 72px;
+      scroll-margin-top: 97px; /* banner(33px) + header(64px) */
     }
   </style>
 </head>
 <body>
 
+  <!-- ========== UNOFFICIAL FAN-SITE BANNER ========== -->
+  <div class="unofficial-banner" role="banner" aria-label="非公式ツール注意">
+    <p>
+      <strong>Unofficial Fan Tool</strong> &mdash;
+      MetaVisionBOT は Riot Games の公式製品ではありません。
+      Riot Games, Inc. とは無関係の個人製作ツールです。
+    </p>
+  </div>
+
   <!-- ========== HEADER ========== -->
   <header>
     <nav>
-      <div class="nav-logo">MetaVision<span>BOT</span></div>
+      <div class="nav-logo">
+        MetaVision<span>BOT</span>
+        <span class="fan-badge">Fan Tool</span>
+      </div>
       <ul class="nav-links">
         <li><a href="#features">Features</a></li>
         <li><a href="#command">Command</a></li>
@@ -593,12 +711,13 @@
 
   <!-- ========== HERO ========== -->
   <section class="hero">
-    <div class="hero-badge">Discord Bot for League of Legends</div>
+    <div class="hero-badge">Unofficial Fan Tool &mdash; Discord Bot for League of Legends</div>
     <h1>MetaVision<span>BOT</span></h1>
-    <p class="hero-subtitle">マッチアップ統計を、すぐに。</p>
+    <p class="hero-subtitle">勝ちパターンを、自分で探せ。</p>
     <p class="hero-desc">
       Master以上のランク戦データをもとに、チャンピオンのマッチアップ統計をDiscordで即座に確認。
-      勝率・ピック率・BAN率・推奨ビルドをワンコマンドで表示します。
+      勝率・ピック率・BAN率・勝率上位ビルドをワンコマンドで表示します。<br>
+      <small style="color:var(--text-muted);font-size:0.85em;">統計を見る。判断は、あなたがする。</small>
     </p>
     <div class="btn-group">
       <a href="https://github.com/siratakiGOHAN/LOLbot" target="_blank" rel="noopener" class="btn btn-primary">GitHub Repository</a>
@@ -628,8 +747,8 @@
         </div>
         <div class="feature-card">
           <div class="feature-icon">⚔️</div>
-          <h3>推奨ビルド</h3>
-          <p>マッチアップに最適化されたアイテムビルドとキーストーンルーンを画像付きで表示。</p>
+          <h3>勝率上位ビルド</h3>
+          <p>マッチアップ別の勝率が高いアイテム構成・キーストーンルーンを統計データとして画像付きで表示。</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">🎬</div>
@@ -713,7 +832,7 @@
             alt="ビルド表示のスクリーンショット"
             loading="lazy"
           >
-          <div class="screenshot-caption">推奨ビルド・アイテム表示</div>
+          <div class="screenshot-caption">勝率上位ビルド・アイテム表示</div>
         </div>
         <div class="screenshot-card">
           <img
@@ -913,11 +1032,16 @@
       <li><a href="#tos">Terms of Service</a></li>
       <li><a href="https://github.com/siratakiGOHAN/LOLbot" target="_blank" rel="noopener">GitHub</a></li>
     </ul>
-    <p class="footer-riot">
-      MetaVisionBOT was created under Riot Games' "Legal Jibber Jabber" policy using assets owned by Riot Games.
-      Riot Games does not endorse or sponsor this project.
-    </p>
-    <p class="footer-copy">&copy; 2025 MetaVisionBOT. League of Legends and Riot Games are trademarks of Riot Games, Inc.</p>
+    <div class="footer-unofficial-box">
+      <span class="disclaimer-icon">&#9888;</span>
+      <p>
+        <strong>非公式ファンツール / Unofficial Fan Tool</strong><br>
+        MetaVisionBOT isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.<br>
+        MetaVisionBOT was created under Riot Games' <a href="https://www.riotgames.com/en/legal" target="_blank" rel="noopener" style="color:var(--fan-banner-text);">"Legal Jibber Jabber"</a> policy using assets owned by Riot Games.<br>
+        <span style="opacity:0.7;">本ツールはRiot Gamesの公式製品ではなく、Riot Gamesの承認・スポンサーシップを受けていません。</span>
+      </p>
+    </div>
+    <p class="footer-copy">&copy; 2026 MetaVisionBOT. League of Legends and Riot Games are trademarks of Riot Games, Inc.</p>
   </footer>
 
 </body>
