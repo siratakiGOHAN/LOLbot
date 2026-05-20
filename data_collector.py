@@ -72,8 +72,9 @@ async def collect_high_elo_data(
     headers = {"X-Riot-Token": riot_key}
 
     total_api_estimate = (
-        len(target_regions)                              # Masterリーグ取得（PUUID直接取得）
-        + len(target_regions) * players_per_region       # 試合ID
+        len(target_regions)                                          # Masterリーグ取得
+        + len(target_regions) * players_per_region                   # Summoner-V4 PUUID取得
+        + len(target_regions) * players_per_region                   # 試合ID
         + len(target_regions) * players_per_region * matches_per_player  # 試合詳細（重複除去前）
     )
     eta_min = total_api_estimate * REQUEST_INTERVAL / 60
@@ -86,7 +87,7 @@ async def collect_high_elo_data(
     async with aiohttp.ClientSession(headers=headers) as session:
         all_puuids: list[tuple[str, str]] = []
 
-        # フェーズ1: 各リージョンのMasterリーグからPUUID収集
+        # フェーズ1: 各リージョンのMasterリーグからsummonerId取得 → Summoner-V4でPUUID取得
         for region in target_regions:
             print(f"[data_collector] [{region}] Masterリーグ取得中...")
             url = f"https://{region}.api.riotgames.com/lol/league/v4/masterleagues/by-queue/RANKED_SOLO_5x5"
@@ -95,11 +96,20 @@ async def collect_high_elo_data(
                 print(f"[data_collector] [{region}] スキップ")
                 continue
             entries = data.get("entries", [])[:players_per_region]
+            fetched = 0
             for entry in entries:
-                puuid = entry.get("puuid")
-                if puuid:
-                    all_puuids.append((puuid, region))
-            print(f"[data_collector] [{region}] {len(entries)}人のPUUID取得完了")
+                summoner_id = entry.get("summonerId")
+                if not summoner_id:
+                    continue
+                summoner_url = f"https://{region}.api.riotgames.com/lol/summoner/v4/summoners/{summoner_id}"
+                summoner_data = await _get(session, summoner_url)
+                if summoner_data:
+                    puuid = summoner_data.get("puuid")
+                    if puuid:
+                        all_puuids.append((puuid, region))
+                        fetched += 1
+                await asyncio.sleep(REQUEST_INTERVAL)
+            print(f"[data_collector] [{region}] {fetched}人のPUUID取得完了")
 
         print(f"[data_collector] 合計 {len(all_puuids)} 人のPUUID収集完了")
 
@@ -130,7 +140,7 @@ async def collect_high_elo_data(
 
             region_prefix = match_id.split("_")[0].lower()
             match_region = next(
-                (MATCH_REGIONS[r] for r in ALL_REGIONS if r.upper() == region_prefix),
+                (MATCH_REGIONS[r] for r in ALL_REGIONS if r.lower() == region_prefix),
                 "asia",
             )
             url = f"https://{match_region}.api.riotgames.com/lol/match/v5/matches/{match_id}"
