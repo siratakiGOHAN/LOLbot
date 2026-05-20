@@ -31,6 +31,8 @@
 
 ![build2](https://raw.githubusercontent.com/siratakiGOHAN/LOLbot/main/docs/images/screenshot_build2.png)
 
+* 開発中のScreenShotです。
+
 ## 技術スタック
 
 - Python 3.13
