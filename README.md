@@ -1,4 +1,4 @@
-# LoL Bot — League of Legends マッチアップ統計 Discord Bot
+# MetaVisionBOT — League of Legends マッチアップ統計 Discord Bot
 
 ハイレートプレイヤー（Master以上）の試合データをもとに、チャンピオンごとのマッチアップ統計を提供する Discord Bot です。勝率・ピック率・BAN率・よく使われるビルドを確認することで、プレイヤー自身がメタを理解し、チャンピオンプールを改善するための参考情報として活用できます。
 
@@ -110,4 +110,4 @@ Master以上のランクプレイヤーの試合データをRiot APIから収集
 
 League of Legends マッチアップ統計 Discord Bot isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
 
-> LoL Bot was created under Riot Games' "Legal Jibber Jabber" policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.
+> MetaVisionBOT was created under Riot Games' "Legal Jibber Jabber" policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.
