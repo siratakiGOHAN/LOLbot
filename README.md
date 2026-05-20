@@ -20,7 +20,16 @@
 
 ## スクリーンショット
 
+### コマンド入力（オートコンプリート対応）
+![command](https://raw.githubusercontent.com/siratakiGOHAN/LOLbot/main/docs/images/screenshot_command.png)
+
+### マッチアップ統計一覧
 ![counter](https://raw.githubusercontent.com/siratakiGOHAN/LOLbot/main/docs/images/screenshot_counter.png)
+
+### ビルド詳細（アイテム画像・キーストーン・勝率）
+![build](https://raw.githubusercontent.com/siratakiGOHAN/LOLbot/main/docs/images/screenshot_build.png)
+
+![build2](https://raw.githubusercontent.com/siratakiGOHAN/LOLbot/main/docs/images/screenshot_build2.png)
 
 ## 技術スタック
 
