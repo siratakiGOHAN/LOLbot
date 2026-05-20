@@ -72,8 +72,7 @@ async def collect_high_elo_data(
     headers = {"X-Riot-Token": riot_key}
 
     total_api_estimate = (
-        len(target_regions)                              # Masterリーグ取得
-        + len(target_regions) * players_per_region       # Summoner PUUID
+        len(target_regions)                              # Masterリーグ取得（PUUID直接取得）
         + len(target_regions) * players_per_region       # 試合ID
         + len(target_regions) * players_per_region * matches_per_player  # 試合詳細（重複除去前）
     )
@@ -97,20 +96,7 @@ async def collect_high_elo_data(
                 continue
             entries = data.get("entries", [])[:players_per_region]
             for entry in entries:
-                # 新API: LeagueItemDTO に puuid が直接含まれる場合
                 puuid = entry.get("puuid")
-                if not puuid:
-                    # 旧API: summonerId 経由で puuid を取得
-                    summoner_id = entry.get("summonerId")
-                    if not summoner_id:
-                        continue
-                    summoner_url = (
-                        f"https://{region}.api.riotgames.com/lol/summoner/v4/summoners/{summoner_id}"
-                    )
-                    summoner = await _get(session, summoner_url)
-                    if summoner:
-                        puuid = summoner.get("puuid")
-                    await asyncio.sleep(REQUEST_INTERVAL)
                 if puuid:
                     all_puuids.append((puuid, region))
             print(f"[data_collector] [{region}] {len(entries)}人のPUUID取得完了")
