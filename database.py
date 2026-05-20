@@ -86,9 +86,9 @@ async def get_counters(db_path: str, champion_id: int, lane: str, limit: int = 5
                 m.games,
                 CAST(m.wins AS REAL) / m.games AS win_rate,
                 COALESCE(cls.pick_count, 0) AS pick_count,
-                COALESCE(cls.games, 0) AS total_lane_games,
+                (SELECT COALESCE(SUM(games), 0) FROM champion_lane_stats WHERE lane = m.lane) AS total_lane_games,
                 COALESCE(bs.ban_count, 0) AS ban_count,
-                COALESCE(cls.games, 0) AS ban_total_games
+                (SELECT COALESCE(COUNT(*), 0) FROM processed_matches) AS ban_total_games
             FROM matchups m
             JOIN champions c ON m.champion_id = c.champion_id
             LEFT JOIN champion_lane_stats cls

@@ -51,9 +51,11 @@ async def test_ban_count_in_counters():
     """get_counters の結果に ban_count と ban_total_games が含まれる。"""
     counters = await database.get_counters(TEST_DB, 266, "top", limit=5)
     darius = next(c for c in counters if c["champion_id"] == 122)
-    # seed: Darius ban_count=320, lane_games=800 (champion_lane_stats)
+    # ban_total_games = processed_matches 総数 = 100
+    # total_lane_games = top レーン全チャンピオン games 合計 = 5000
     assert darius["ban_count"] == 320
-    assert darius["ban_total_games"] == 800
+    assert darius["ban_total_games"] == 100
+    assert darius["total_lane_games"] == 5000
 
 
 @pytest.mark.asyncio

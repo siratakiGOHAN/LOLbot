@@ -99,6 +99,10 @@ async def seed() -> None:
     for champ_id, ban_count in BAN_STATS:
         await database.upsert_ban_stats(db, champ_id, ban_count=ban_count)
 
+    # 処理済み試合（BAN率の分母として使用）
+    for i in range(100):
+        await database.mark_match_processed(db, f"TEST_{i:04d}")
+
     print(f"[seed] テストデータを {db} に投入しました")
 
 
