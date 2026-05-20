@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MetaVisionBOT - League of Legends Matchup Statistics Discord Bot</title>
+  <style>
+    :root {
+      /* ---- Fan-site palette (LoLインスパイア・非公式差別化) ---- */
+      --accent: #3CBFB0;
+      --accent-light: #7EE8DC;
+      --accent-dark: #1F8A7E;
+      --accent-muted: rgba(60,191,176,0.15);
+
+      /* LoLの「金」は脇役として残す */
+      --gold: #C89B3C;
+      --gold-light: #F0E6C0;
+      --gold-dark: #785A28;
+
+      --bg-base: #141820;
+      --bg-mid:  #1A1F2B;
+      --bg-card: #1E2535;
+      --bg-dark: #0E1118;
+
+      --text-primary:   #E8EAF0;
+      --text-secondary: #8A96A8;
+      --text-muted:     #5A6478;
+
+      --border:        #2A3548;
+      --border-accent: var(--accent-dark);
+
+      --fan-banner-bg:     #1A2A20;
+      --fan-banner-border: #2E7D4F;
+      --fan-banner-text:   #6FCF97;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: var(--accent-light);
+      text-decoration: underline;
+    }
+
+    /* ===================== FAN-SITE BANNER ===================== */
+    .unofficial-banner {
+      background: var(--fan-banner-bg);
+      border-bottom: 1px solid var(--fan-banner-border);
+      padding: 7px 20px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+
+    .unofficial-banner p {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--fan-banner-text);
+      letter-spacing: 0.08em;
+      margin: 0;
+    }
+
+    .unofficial-banner strong {
+      color: #A8E6C0;
+    }
+
+    /* ===================== HEADER ===================== */
+    header {
+      background: var(--bg-dark);
+      border-bottom: 2px solid var(--border-accent);
+      padding: 0 20px;
+      position: sticky;
+      top: 33px;
+      z-index: 100;
+    }
+
+    nav {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .nav-logo {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-logo span {
+      color: var(--text-primary);
+    }
+
+    .nav-logo .fan-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      background: var(--fan-banner-bg);
+      border: 1px solid var(--fan-banner-border);
+      color: var(--fan-banner-text);
+      padding: 2px 7px;
+      border-radius: 99px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      line-height: 1.6;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      letter-spacing: 0.5px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* ===================== HERO ===================== */
+    .hero {
+      background:
+        linear-gradient(180deg, rgba(10,12,18,0.85) 0%, rgba(20,24,32,0.95) 100%),
+        radial-gradient(ellipse at 50% 0%, #1a2535 0%, #0e1118 70%);
+      padding: 100px 20px 80px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(60,191,176,0.025) 2px,
+        rgba(60,191,176,0.025) 4px
+      );
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-muted);
+      border: 1px solid var(--accent-dark);
+      color: var(--accent);
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 5px 16px;
+      border-radius: 4px;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.2rem, 6vw, 4rem);
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      text-shadow: 0 0 40px rgba(60,191,176,0.25);
+    }
+
+    .hero h1 span {
+      color: var(--accent);
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1rem, 2.5vw, 1.3rem);
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      letter-spacing: 1px;
+    }
+
+    .hero-desc {
+      max-width: 600px;
+      margin: 0 auto 36px;
+      color: var(--text-secondary);
+      font-size: 1rem;
+      line-height: 1.8;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 13px 32px;
+      border-radius: 3px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+      color: #0e1118;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      color: #0e1118;
+      text-decoration: none;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(60,191,176,0.35);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--accent-dark);
+      color: var(--accent);
+    }
+
+    .btn-secondary:hover {
+      background: var(--accent-muted);
+      color: var(--accent-light);
+      text-decoration: none;
+      transform: translateY(-1px);
+    }
+
+    /* ===================== SECTIONS ===================== */
+    section {
+      padding: 72px 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+
+    .section-label {
+      display: inline-block;
+      color: var(--accent);
+      font-size: 0.75rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(1.5rem, 4vw, 2.2rem);
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+
+    .section-divider {
+      width: 60px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      margin: 16px auto;
+    }
+
+    .section-desc {
+      color: var(--text-secondary);
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    /* ===================== FEATURES ===================== */
+    .features-section {
+      background: var(--bg-mid);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 32px 24px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--accent-dark);
+      transform: translateY(-3px);
+    }
+
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 16px;
+    }
+
+    .feature-card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .feature-card p {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* ===================== COMMAND ===================== */
+    .command-section {
+      background: var(--bg-base);
+    }
+
+    .command-demo {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 28px 32px;
+      max-width: 640px;
+      margin: 0 auto 40px;
+      font-family: 'Consolas', 'Courier New', monospace;
+    }
+
+    .command-line {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .cmd-prompt {
+      color: var(--accent);
+      font-size: 1.1rem;
+    }
+
+    .cmd-text {
+      color: #7ec8e3;
+      font-size: 1rem;
+    }
+
+    .cmd-arg {
+      color: #a8d8a8;
+    }
+
+    .cmd-optional {
+      color: #d4a0d4;
+    }
+
+    .command-examples {
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .cmd-example {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .cmd-example .hl {
+      color: #7ec8e3;
+    }
+
+    /* ===================== SCREENSHOTS ===================== */
+    .screenshots-section {
+      background: var(--bg-mid);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .screenshots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .screenshot-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .screenshot-card:hover {
+      border-color: var(--accent-dark);
+      transform: translateY(-3px);
+    }
+
+    .screenshot-card img {
+      width: 100%;
+      display: block;
+      background: var(--bg-mid);
+    }
+
+    .screenshot-caption {
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ===================== STATS ===================== */
+    .stats-section {
+      background: var(--bg-base);
+      text-align: center;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 32px;
+    }
+
+    .stat-item {
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-card);
+    }
+
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* ===================== POLICY SECTIONS ===================== */
+    .policy-section {
+      background: var(--bg-mid);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .policy-section + .policy-section {
+      border-top: none;
+    }
+
+    .policy-content {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .policy-content h3 {
+      font-size: 1.1rem;
+      color: var(--accent);
+      margin: 28px 0 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .policy-content h3:first-child {
+      margin-top: 0;
+    }
+
+    .policy-content p,
+    .policy-content li {
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      line-height: 1.8;
+      margin-bottom: 8px;
+    }
+
+    .policy-content ul {
+      padding-left: 20px;
+    }
+
+    .policy-updated {
+      display: inline-block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    /* ===================== FOOTER ===================== */
+    footer {
+      background: var(--bg-dark);
+      border-top: 2px solid var(--border-accent);
+      padding: 40px 20px 28px;
+      text-align: center;
+    }
+
+    .footer-logo {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      list-style: none;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .footer-unofficial-box {
+      display: inline-flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--fan-banner-bg);
+      border: 1px solid var(--fan-banner-border);
+      border-radius: 6px;
+      padding: 12px 20px;
+      max-width: 700px;
+      margin: 0 auto 20px;
+      text-align: left;
+    }
+
+    .footer-unofficial-box .disclaimer-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .footer-unofficial-box p {
+      font-size: 0.78rem;
+      color: var(--fan-banner-text);
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .footer-riot {
+      max-width: 700px;
+      margin: 0 auto 16px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    .footer-copy {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* ===================== RESPONSIVE ===================== */
+    @media (max-width: 680px) {
+      .nav-links {
+        display: none;
+      }
+
+      header {
+        top: 30px;
+      }
+
+      .hero {
+        padding: 80px 20px 60px;
+      }
+
+      .btn-group {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .command-demo {
+        padding: 20px;
+      }
+
+      section {
+        padding: 52px 16px;
+      }
+
+      .footer-unofficial-box {
+        flex-direction: column;
+        gap: 6px;
+      }
+    }
+
+    /* ===================== ANCHOR OFFSET ===================== */
+    [id] {
+      scroll-margin-top: 97px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== UNOFFICIAL FAN-SITE BANNER ========== -->
+  <div class="unofficial-banner" role="banner" aria-label="非公式ツール注意">
+    <p>
+      <strong>Unofficial Fan Tool</strong> &mdash;
+      MetaVisionBOT は Riot Games の公式製品ではありません。
+      Riot Games, Inc. とは無関係の個人製作ツールです。
+    </p>
+  </div>
+
+  <!-- ========== HEADER ========== -->
+  <header>
+    <nav>
+      <div class="nav-logo">
+        MetaVision<span>BOT</span>
+        <span class="fan-badge">Fan Tool</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#command">Command</a></li>
+        <li><a href="#screenshots">Screenshots</a></li>
+        <li><a href="#privacy">Privacy Policy</a></li>
+        <li><a href="#tos">Terms of Service</a></li>
+        <li><a href="https://github.com/siratakiGOHAN/LOLbot" target="_blank" rel="noopener">GitHub</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="hero">
+    <div class="hero-badge">Unofficial Fan Tool &mdash; Discord Bot for League of Legends</div>
+    <h1>MetaVision<span>BOT</span></h1>
+    <p class="hero-subtitle">マッチアップ統計を、すぐに。</p>
+    <p class="hero-desc">
+      Master以上のランク戦データをもとに、チャンピオンのマッチアップ統計をDiscordで即座に確認。
+      勝率・ピック率・BAN率・勝率上位ビルドをワンコマンドで表示します。
+    </p>
+    <div class="btn-group">
+      <a href="https://github.com/siratakiGOHAN/LOLbot" target="_blank" rel="noopener" class="btn btn-primary">GitHub Repository</a>
+      <a href="#features" class="btn btn-secondary">詳細を見る</a>
+    </div>
+  </section>
+
+  <!-- ========== FEATURES ========== -->
+  <section class="features-section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Features</span>
+        <h2 class="section-title">主な機能</h2>
+        <div class="section-divider"></div>
+        <p class="section-desc">MetaVisionBOTが提供する、League of Legendsプレイヤーのための統計機能</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>マッチアップ統計</h3>
+          <p>チャンピオンごとの対面勝率・ピック率・BAN率をMaster以上のソロランクデータから表示。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🏆</div>
+          <h3>高ランクデータ</h3>
+          <p>Master・Grandmaster・Challengerの試合データのみを対象とした、高精度な統計情報を提供。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚔️</div>
+          <h3>勝率上位ビルド</h3>
+          <p>マッチアップ別の勝率上位アイテムビルドとキーストーンルーンを画像付きで表示。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎬</div>
+          <h3>動画リンク</h3>
+          <p>マッチアップ参考動画をYouTubeで検索するボタンをワンクリックで提供。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🌐</div>
+          <h3>日英対応</h3>
+          <p>チャンピオン名の日本語・英語両対応のオートコンプリートで、素早くコマンド入力が可能。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🗺️</div>
+          <h3>レーン指定</h3>
+          <p>トップ・ジャングル・ミッド・ADC・サポートのレーンを指定して絞り込んだ統計を確認。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== COMMAND ========== -->
+  <section class="command-section" id="command">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">How to Use</span>
+        <h2 class="section-title">使い方</h2>
+        <div class="section-divider"></div>
+        <p class="section-desc">シンプルなスラッシュコマンドでマッチアップ統計をすぐに確認できます</p>
+      </div>
+
+      <div class="command-demo">
+        <div class="command-line">
+          <span class="cmd-prompt">/</span>
+          <span class="cmd-text">lol <span class="cmd-arg">&lt;チャンピオン名&gt;</span> <span class="cmd-optional">[レーン]</span></span>
+        </div>
+        <div class="command-examples">
+          <div class="cmd-example"><span class="hl">/lol Yasuo</span> — 全レーンのヤスオのマッチアップ統計を表示</div>
+          <div class="cmd-example"><span class="hl">/lol ヤスオ mid</span> — ミッドのヤスオのマッチアップ統計を表示</div>
+          <div class="cmd-example"><span class="hl">/lol Jinx adc</span> — ADCのジンクスのマッチアップ統計を表示</div>
+          <div class="cmd-example"><span class="hl">/lol ダリウス top</span> — トップのダリウスのマッチアップ統計を表示</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;">
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+          チャンピオン名は日本語・英語どちらでも入力可能。オートコンプリートで候補を選択できます。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SCREENSHOTS ========== -->
+  <section class="screenshots-section" id="screenshots">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Screenshots</span>
+        <h2 class="section-title">スクリーンショット</h2>
+        <div class="section-divider"></div>
+        <p class="section-desc">実際のBot出力イメージ</p>
+      </div>
+      <div class="screenshots-grid">
+        <div class="screenshot-card">
+          <img
+            src="https://raw.githubusercontent.com/siratakiGOHAN/LOLbot/main/docs/images/screenshot_command.png"
+            alt="コマンド入力のスクリーンショット"
+            loading="lazy"
+          >
+          <div class="screenshot-caption">コマンド入力・オートコンプリート</div>
+        </div>
+        <div class="screenshot-card">
+          <img
+            src="https://raw.githubusercontent.com/siratakiGOHAN/LOLbot/main/docs/images/screenshot_counter.png"
+            alt="マッチアップ統計のスクリーンショット"
+            loading="lazy"
+          >
+          <div class="screenshot-caption">マッチアップ統計・カウンター情報</div>
+        </div>
+        <div class="screenshot-card">
+          <img
+            src="https://raw.githubusercontent.com/siratakiGOHAN/LOLbot/main/docs/images/screenshot_build.png"
+            alt="ビルド表示のスクリーンショット"
+            loading="lazy"
+          >
+          <div class="screenshot-caption">推奨ビルド・アイテム表示</div>
+        </div>
+        <div class="screenshot-card">
+          <img
+            src="https://raw.githubusercontent.com/siratakiGOHAN/LOLbot/main/docs/images/screenshot_build2.png"
+            alt="ルーン表示のスクリーンショット"
+            loading="lazy"
+          >
+          <div class="screenshot-caption">キーストーンルーン表示</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== STATS ========== -->
+  <section class="stats-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Data</span>
+        <h2 class="section-title">データについて</h2>
+        <div class="section-divider"></div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-number">Master+</span>
+          <span class="stat-label">対象ランク帯</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">160+</span>
+          <span class="stat-label">チャンピオン対応</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">5</span>
+          <span class="stat-label">レーン対応</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">JP / EN</span>
+          <span class="stat-label">対応言語</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PRIVACY POLICY ========== -->
+  <section class="policy-section" id="privacy">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Legal</span>
+        <h2 class="section-title">プライバシーポリシー<br><small style="font-size:0.6em;color:var(--text-secondary);">Privacy Policy</small></h2>
+        <div class="section-divider"></div>
+      </div>
+      <div class="policy-content">
+        <span class="policy-updated">最終更新日 / Last Updated: 2025年1月</span>
+
+        <h3>1. 収集するデータについて</h3>
+        <p>
+          MetaVisionBOT（以下「本Bot」）は、Riot Games APIを通じて取得した以下の公開試合統計データのみを使用します。
+        </p>
+        <ul>
+          <li>チャンピオンID</li>
+          <li>試合の勝敗結果</li>
+          <li>使用アイテム情報</li>
+          <li>使用ルーン情報</li>
+          <li>レーン・ロール情報</li>
+        </ul>
+
+        <h3>2. 収集しないデータ</h3>
+        <p>
+          本BotはDiscordユーザーの個人情報を一切収集・保存しません。具体的には以下のデータは取得・記録しません。
+        </p>
+        <ul>
+          <li>Discordのユーザー名・ID・メールアドレス等の個人識別情報</li>
+          <li>入力されたコマンドの内容・履歴</li>
+          <li>IPアドレス・位置情報その他の端末情報</li>
+          <li>サモナー名・Riot IDその他のゲームアカウント情報</li>
+        </ul>
+
+        <h3>3. データの使用目的</h3>
+        <p>
+          収集した試合統計データは、チャンピオンマッチアップの集計統計を算出する目的のみに使用します。
+          個々のプレイヤーを特定・追跡する目的には一切使用しません。すべてのデータは匿名の集計値として処理されます。
+        </p>
+
+        <h3>4. データの保存・管理</h3>
+        <p>
+          取得した統計データはBotの運営に必要な期間のみ保持し、第三者への販売・提供は行いません。
+          Riot Games APIの利用規約に従い、適切に管理します。
+        </p>
+
+        <h3>5. 第三者サービス・使用API</h3>
+        <p>
+          本Botは以下の第三者サービスおよびRiot Games APIエンドポイントを使用しています。
+        </p>
+        <ul>
+          <li><strong>Riot Games League-V4 API</strong> — Master以上のプレイヤーリスト（PUUID）の取得</li>
+          <li><strong>Riot Games Match-V5 API</strong> — 試合詳細データ（チャンピオン・勝敗・アイテム・ルーン）の取得</li>
+          <li><strong>Riot Games Data Dragon</strong> — チャンピオン名・アイテム画像等の取得</li>
+          <li><strong>Discord API</strong> — スラッシュコマンドの提供</li>
+        </ul>
+        <p>
+          取得したPUUID等の個人識別子はデータ収集の処理中のみ使用し、データベースには保存しません。
+          各サービスのプライバシーポリシーも合わせてご確認ください。
+        </p>
+        <ul>
+          <li><a href="https://www.riotgames.com/en/privacy-notice" target="_blank" rel="noopener">Riot Games プライバシーポリシー</a></li>
+          <li><a href="https://discord.com/privacy" target="_blank" rel="noopener">Discord プライバシーポリシー</a></li>
+        </ul>
+
+        <h3>6. お問い合わせ</h3>
+        <p>
+          本プライバシーポリシーに関するご質問は、
+          <a href="https://github.com/siratakiGOHAN/LOLbot/issues" target="_blank" rel="noopener">GitHubのIssueページ</a>よりお問い合わせください。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== TERMS OF SERVICE ========== -->
+  <section class="policy-section" id="tos">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Legal</span>
+        <h2 class="section-title">利用規約<br><small style="font-size:0.6em;color:var(--text-secondary);">Terms of Service</small></h2>
+        <div class="section-divider"></div>
+      </div>
+      <div class="policy-content">
+        <span class="policy-updated">最終更新日 / Last Updated: 2025年1月</span>
+
+        <h3>1. サービスの概要</h3>
+        <p>
+          MetaVisionBOT（以下「本Bot」）は、League of Legendsのチャンピオンマッチアップ統計情報を提供するDiscord Botです。
+          本Botを利用することで、以下の利用規約に同意したものとみなします。
+        </p>
+
+        <h3>2. 統計データの性質</h3>
+        <p>
+          本Botが提供する統計データはあくまで参考情報です。試合戦略・チャンピオン選択・ビルドに関する最終的な判断は、
+          プレイヤー自身が行うものとします。統計情報の内容を根拠とした損害について、開発者は一切の責任を負いません。
+        </p>
+
+        <h3>3. サービスの可用性</h3>
+        <p>
+          本BotはRiot Games APIの可用性に依存しています。以下の場合においてサービスが利用できないことがあります。
+        </p>
+        <ul>
+          <li>Riot Games APIのメンテナンス・障害時</li>
+          <li>Discordプラットフォームの障害時</li>
+          <li>開発者による更新・メンテナンス作業時</li>
+          <li>その他予期せぬ技術的問題が発生した場合</li>
+        </ul>
+        <p>
+          開発者はサービスの継続的な提供・可用性を保証しません。予告なくサービスを停止・変更・終了する場合があります。
+        </p>
+
+        <h3>4. データの正確性</h3>
+        <p>
+          提供する統計情報はRiot Games APIから取得したデータに基づいていますが、その正確性・完全性・最新性を保証するものではありません。
+          パッチアップデートにより統計情報が実態と乖離する場合があります。
+        </p>
+
+        <h3>5. 禁止事項</h3>
+        <p>以下の行為を禁止します。</p>
+        <ul>
+          <li>本Botを利用した自動化・スパム行為</li>
+          <li>Riot Games利用規約に違反する目的での使用</li>
+          <li>本Botのリバースエンジニアリング・改ざん</li>
+          <li>その他開発者が不適切と判断する利用</li>
+        </ul>
+
+        <h3>6. Riot Gamesとの関係について</h3>
+        <p>
+          本BotはRiot Gamesが定める "Legal Jibber Jabber" ポリシー（<a href="https://www.riotgames.com/en/legal" target="_blank" rel="noopener">https://www.riotgames.com/en/legal</a>）に基づいて開発されています。
+          本BotはRiot Gamesの公式製品・サービスではなく、Riot Gamesによる承認・スポンサーシップを受けていません。
+        </p>
+        <p>
+          League of Legends、Riot Games、およびすべての関連するチャンピオン名・アセット等は、Riot Games, Inc. の商標または登録商標です。
+        </p>
+
+        <h3>7. 免責事項</h3>
+        <p>
+          本Botの利用によって生じた直接的・間接的な損害について、開発者は一切の責任を負いません。
+          本サービスは現状有姿（as-is）で提供されます。
+        </p>
+
+        <h3>8. 規約の変更</h3>
+        <p>
+          開発者は本利用規約をいつでも変更できるものとします。変更後も本Botを引き続き使用することで、
+          変更後の規約に同意したものとみなします。
+        </p>
+
+        <h3>9. お問い合わせ</h3>
+        <p>
+          本利用規約に関するご質問は、
+          <a href="https://github.com/siratakiGOHAN/LOLbot/issues" target="_blank" rel="noopener">GitHubのIssueページ</a>よりお問い合わせください。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer>
+    <div class="footer-logo">MetaVisionBOT</div>
+    <ul class="footer-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#command">Command</a></li>
+      <li><a href="#screenshots">Screenshots</a></li>
+      <li><a href="#privacy">Privacy Policy</a></li>
+      <li><a href="#tos">Terms of Service</a></li>
+      <li><a href="https://github.com/siratakiGOHAN/LOLbot" target="_blank" rel="noopener">GitHub</a></li>
+    </ul>
+    <div class="footer-unofficial-box">
+      <span class="disclaimer-icon">&#9888;</span>
+      <p>
+        <strong>非公式ファンツール / Unofficial Fan Tool</strong><br>
+        MetaVisionBOT was created under Riot Games' "Legal Jibber Jabber" policy using assets owned by Riot Games.
+        Riot Games does not endorse or sponsor this project.
+        This is not an official Riot Games product.
+      </p>
+    </div>
+    <p class="footer-copy">&copy; 2025 MetaVisionBOT. League of Legends and Riot Games are trademarks of Riot Games, Inc.</p>
+  </footer>
+
+</body>
+</html>
