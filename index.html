@@ -4,8 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MetaVisionBOT - League of Legends Matchup Statistics Discord Bot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Rajdhani:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
+      --font-heading: 'Cinzel', 'Noto Sans JP', serif;
+      --font-sub:     'Rajdhani', 'Noto Sans JP', sans-serif;
+      --font-body:    'Inter', 'Noto Sans JP', sans-serif;
       --gold: #C89B3C;
       --gold-light: #F0E6C0;
       --gold-dark: #785A28;
@@ -28,8 +34,9 @@
     body {
       background-color: var(--navy);
       color: var(--text-primary);
-      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
+      font-family: var(--font-body);
+      line-height: 1.7;
+      letter-spacing: 0.02em;
     }
 
     a {
@@ -62,11 +69,11 @@
     }
 
     .nav-logo {
-      font-size: 1.3rem;
+      font-family: var(--font-heading);
+      font-size: 1.2rem;
       font-weight: 700;
       color: var(--gold);
-      letter-spacing: 1px;
-      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
     .nav-logo span {
@@ -80,9 +87,12 @@
     }
 
     .nav-links a {
+      font-family: var(--font-sub);
       color: var(--text-secondary);
       font-size: 0.9rem;
-      letter-spacing: 0.5px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
       transition: color 0.2s;
     }
 
@@ -119,11 +129,13 @@
 
     .hero-badge {
       display: inline-block;
+      font-family: var(--font-sub);
       background: rgba(200,155,60,0.15);
       border: 1px solid var(--gold-dark);
       color: var(--gold);
       font-size: 0.75rem;
-      letter-spacing: 2px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
       padding: 5px 16px;
       border-radius: 2px;
@@ -131,10 +143,11 @@
     }
 
     .hero h1 {
+      font-family: var(--font-heading);
       font-size: clamp(2.2rem, 6vw, 4rem);
-      font-weight: 800;
+      font-weight: 900;
       color: var(--gold);
-      letter-spacing: 2px;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       margin-bottom: 8px;
       text-shadow: 0 0 40px rgba(200,155,60,0.4);
@@ -170,9 +183,10 @@
       display: inline-block;
       padding: 13px 32px;
       border-radius: 3px;
+      font-family: var(--font-sub);
       font-size: 0.95rem;
-      font-weight: 600;
-      letter-spacing: 1px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       transition: all 0.2s;
       cursor: pointer;
@@ -222,17 +236,21 @@
 
     .section-label {
       display: inline-block;
+      font-family: var(--font-sub);
       color: var(--gold);
       font-size: 0.75rem;
-      letter-spacing: 3px;
+      font-weight: 600;
+      letter-spacing: 0.25em;
       text-transform: uppercase;
       margin-bottom: 12px;
     }
 
     .section-title {
+      font-family: var(--font-sub);
       font-size: clamp(1.5rem, 4vw, 2.2rem);
       font-weight: 700;
       color: var(--text-primary);
+      letter-spacing: 0.04em;
       margin-bottom: 12px;
     }
 
@@ -281,18 +299,19 @@
     }
 
     .feature-card h3 {
-      font-size: 1.05rem;
+      font-family: var(--font-sub);
+      font-size: 1.1rem;
       font-weight: 700;
       color: var(--gold);
       margin-bottom: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.04em;
     }
 
     .feature-card p {
       font-size: 0.9rem;
       color: var(--text-secondary);
-      line-height: 1.7;
+      line-height: 1.8;
+      letter-spacing: 0.03em;
     }
 
     /* ===================== COMMAND ===================== */
@@ -411,6 +430,7 @@
     }
 
     .stat-number {
+      font-family: var(--font-heading);
       font-size: 2.5rem;
       font-weight: 800;
       color: var(--gold);
@@ -419,10 +439,11 @@
     }
 
     .stat-label {
+      font-family: var(--font-sub);
       font-size: 0.85rem;
       color: var(--text-secondary);
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.12em;
     }
 
     /* ===================== POLICY SECTIONS ===================== */
@@ -456,8 +477,9 @@
     .policy-content p,
     .policy-content li {
       font-size: 0.92rem;
-      color: var(--text-secondary);
-      line-height: 1.8;
+      color: #b0a080;
+      line-height: 1.9;
+      letter-spacing: 0.03em;
       margin-bottom: 8px;
     }
 
@@ -481,11 +503,11 @@
     }
 
     .footer-logo {
+      font-family: var(--font-heading);
       font-size: 1.2rem;
       font-weight: 700;
       color: var(--gold);
-      letter-spacing: 2px;
-      text-transform: uppercase;
+      letter-spacing: 0.1em;
       margin-bottom: 16px;
     }
 
