@@ -9,6 +9,7 @@ Riot API からハイレート試合データを収集してDBへ保存するモ
 """
 import asyncio
 import aiohttp
+import aiosqlite
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -72,8 +73,7 @@ async def collect_high_elo_data(
     headers = {"X-Riot-Token": riot_key}
 
     total_api_estimate = (
-        len(target_regions)                                          # Masterリーグ取得
-        + len(target_regions) * players_per_region                   # Summoner-V4 PUUID取得
+        len(target_regions)                                          # Masterリーグ取得（PUUIDを直接含む）
         + len(target_regions) * players_per_region                   # 試合ID
         + len(target_regions) * players_per_region * matches_per_player  # 試合詳細（重複除去前）
     )
@@ -87,7 +87,7 @@ async def collect_high_elo_data(
     async with aiohttp.ClientSession(headers=headers) as session:
         all_puuids: list[tuple[str, str]] = []
 
-        # フェーズ1: 各リージョンのMasterリーグからsummonerId取得 → Summoner-V4でPUUID取得
+        # フェーズ1: 各リージョンのMasterリーグからPUUIDを直接取得（League-V4がpuuidを返すようになった）
         for region in target_regions:
             print(f"[data_collector] [{region}] Masterリーグ取得中...")
             url = f"https://{region}.api.riotgames.com/lol/league/v4/masterleagues/by-queue/RANKED_SOLO_5x5"
@@ -98,17 +98,11 @@ async def collect_high_elo_data(
             entries = data.get("entries", [])[:players_per_region]
             fetched = 0
             for entry in entries:
-                summoner_id = entry.get("summonerId")
-                if not summoner_id:
+                puuid = entry.get("puuid")
+                if not puuid:
                     continue
-                summoner_url = f"https://{region}.api.riotgames.com/lol/summoner/v4/summoners/{summoner_id}"
-                summoner_data = await _get(session, summoner_url)
-                if summoner_data:
-                    puuid = summoner_data.get("puuid")
-                    if puuid:
-                        all_puuids.append((puuid, region))
-                        fetched += 1
-                await asyncio.sleep(REQUEST_INTERVAL)
+                all_puuids.append((puuid, region))
+                fetched += 1
             print(f"[data_collector] [{region}] {fetched}人のPUUID取得完了")
 
         print(f"[data_collector] 合計 {len(all_puuids)} 人のPUUID収集完了")
@@ -130,37 +124,42 @@ async def collect_high_elo_data(
         print("[data_collector] レートリミットウィンドウをリセット中（120秒待機）...")
         await asyncio.sleep(120)
 
-        # フェーズ3: 試合データの解析とDB保存
+        # フェーズ3: 試合データの解析とDB保存（1接続を全試合で共有）
         processed = 0
         skipped = 0
-        for match_id in all_match_ids:
-            if await database.is_match_processed(db_path, match_id):
-                skipped += 1
-                continue
+        async with aiosqlite.connect(db_path) as db:
+            for match_id in all_match_ids:
+                if await database.is_match_processed(db_path, match_id, _db=db):
+                    skipped += 1
+                    continue
 
-            region_prefix = match_id.split("_")[0].lower()
-            match_region = next(
-                (MATCH_REGIONS[r] for r in ALL_REGIONS if r.lower() == region_prefix),
-                "asia",
-            )
-            url = f"https://{match_region}.api.riotgames.com/lol/match/v5/matches/{match_id}"
-            match_data = await _get(session, url)
-            if match_data is None:
-                skipped += 1
-                continue
+                region_prefix = match_id.split("_")[0].lower()
+                match_region = next(
+                    (MATCH_REGIONS[r] for r in ALL_REGIONS if r.lower() == region_prefix),
+                    "asia",
+                )
+                url = f"https://{match_region}.api.riotgames.com/lol/match/v5/matches/{match_id}"
+                match_data = await _get(session, url)
+                if match_data is None:
+                    skipped += 1
+                    continue
 
-            await _process_match(db_path, match_data)
-            await database.mark_match_processed(db_path, match_id)
-            processed += 1
-            if processed % 50 == 0:
-                print(f"[data_collector] {processed}/{len(all_match_ids)} 試合処理済み")
-            await asyncio.sleep(REQUEST_INTERVAL)
+                await _process_match(db_path, match_data, db)
+                await database.mark_match_processed(db_path, match_id, _db=db)
+                processed += 1
+                if processed % 50 == 0:
+                    print(f"[data_collector] {processed}/{len(all_match_ids)} 試合処理済み")
+                await asyncio.sleep(REQUEST_INTERVAL)
 
     print(f"[data_collector] 完了: {processed} 試合処理 / {skipped} スキップ")
     print(f"[data_collector] 終了時刻: {datetime.now(timezone.utc).isoformat()}")
 
 
-async def _process_match(db_path: str, match_data: dict) -> None:
+async def _process_match(
+    db_path: str,
+    match_data: dict,
+    _db: aiosqlite.Connection | None = None,
+) -> None:
     """1試合のデータを解析してDBにupsertする。"""
     info = match_data.get("info", {})
     participants = info.get("participants", [])
@@ -191,8 +190,8 @@ async def _process_match(db_path: str, match_data: dict) -> None:
             .get("perk", 0)
         )
 
-        await database.upsert_champion(db_path, champ_id, str(champ_id))
-        await database.upsert_lane_stats(db_path, champ_id, lane, won, 1, 1)
+        await database.upsert_champion(db_path, champ_id, str(champ_id), _db=_db)
+        await database.upsert_lane_stats(db_path, champ_id, lane, won, 1, 1, _db=_db)
 
         for enemy in participants:
             if enemy["teamId"] == participant["teamId"]:
@@ -203,8 +202,8 @@ async def _process_match(db_path: str, match_data: dict) -> None:
             enemy_champ_id = enemy.get("championId")
             if enemy_champ_id is None:
                 continue
-            await database.upsert_matchup(db_path, champ_id, enemy_champ_id, lane, won, 1)
-            await database.upsert_build(db_path, champ_id, enemy_champ_id, lane, items, keystone_id, won, 1)
+            await database.upsert_matchup(db_path, champ_id, enemy_champ_id, lane, won, 1, _db=_db)
+            await database.upsert_build(db_path, champ_id, enemy_champ_id, lane, items, keystone_id, won, 1, _db=_db)
             break
 
     # BAN データ収集
@@ -213,7 +212,7 @@ async def _process_match(db_path: str, match_data: dict) -> None:
         for ban in team.get("bans", []):
             banned_id = ban.get("championId")
             if banned_id and banned_id > 0:
-                await database.upsert_ban_stats(db_path, banned_id)
+                await database.upsert_ban_stats(db_path, banned_id, _db=_db)
 
 
 async def sync_champion_names(db_path: str) -> None:

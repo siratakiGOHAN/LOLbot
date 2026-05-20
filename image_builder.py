@@ -7,7 +7,7 @@
   data/build_images/{ids}_ks{rune_id}.png    — 合成済み画像
 
 合成レイアウト:
-  [item1][PADDING][item2][PADDING][item3][SEPARATOR][keystone]
+  [keystone][SEPARATOR][item1][PADDING][item2][PADDING][item3]
 """
 import aiohttp
 from pathlib import Path

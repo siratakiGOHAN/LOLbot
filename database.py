@@ -157,21 +157,30 @@ async def get_main_lane(db_path: str, champion_id: int) -> str | None:
     return row[0] if row else None
 
 
-async def upsert_champion(db_path: str, champion_id: int, name_en: str, name_ja: str | None = None) -> None:
+async def upsert_champion(
+    db_path: str,
+    champion_id: int,
+    name_en: str,
+    name_ja: str | None = None,
+    _db: aiosqlite.Connection | None = None,
+) -> None:
     now = datetime.now(timezone.utc).isoformat()
-    async with aiosqlite.connect(db_path) as db:
-        await db.execute(
-            """
-            INSERT INTO champions (champion_id, name_en, name_ja, updated_at)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(champion_id) DO UPDATE SET
-                name_en = excluded.name_en,
-                name_ja = excluded.name_ja,
-                updated_at = excluded.updated_at
-            """,
-            (champion_id, name_en, name_ja, now),
-        )
-        await db.commit()
+    sql = """
+        INSERT INTO champions (champion_id, name_en, name_ja, updated_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(champion_id) DO UPDATE SET
+            name_en = excluded.name_en,
+            name_ja = excluded.name_ja,
+            updated_at = excluded.updated_at
+        """
+    params = (champion_id, name_en, name_ja, now)
+    if _db is not None:
+        await _db.execute(sql, params)
+        await _db.commit()
+    else:
+        async with aiosqlite.connect(db_path) as db:
+            await db.execute(sql, params)
+            await db.commit()
 
 
 async def upsert_matchup(
@@ -181,21 +190,25 @@ async def upsert_matchup(
     lane: str,
     wins: int,
     games: int,
+    _db: aiosqlite.Connection | None = None,
 ) -> None:
     now = datetime.now(timezone.utc).isoformat()
-    async with aiosqlite.connect(db_path) as db:
-        await db.execute(
-            """
-            INSERT INTO matchups (champion_id, enemy_id, lane, wins, games, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(champion_id, enemy_id, lane) DO UPDATE SET
-                wins = wins + excluded.wins,
-                games = games + excluded.games,
-                updated_at = excluded.updated_at
-            """,
-            (champion_id, enemy_id, lane, wins, games, now),
-        )
-        await db.commit()
+    sql = """
+        INSERT INTO matchups (champion_id, enemy_id, lane, wins, games, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(champion_id, enemy_id, lane) DO UPDATE SET
+            wins = wins + excluded.wins,
+            games = games + excluded.games,
+            updated_at = excluded.updated_at
+        """
+    params = (champion_id, enemy_id, lane, wins, games, now)
+    if _db is not None:
+        await _db.execute(sql, params)
+        await _db.commit()
+    else:
+        async with aiosqlite.connect(db_path) as db:
+            await db.execute(sql, params)
+            await db.commit()
 
 
 async def upsert_build(
@@ -207,21 +220,25 @@ async def upsert_build(
     keystone_id: int,
     wins: int,
     games: int,
+    _db: aiosqlite.Connection | None = None,
 ) -> None:
     now = datetime.now(timezone.utc).isoformat()
-    async with aiosqlite.connect(db_path) as db:
-        await db.execute(
-            """
-            INSERT INTO builds (champion_id, enemy_id, lane, item_ids, keystone_id, wins, games, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(champion_id, enemy_id, lane, item_ids) DO UPDATE SET
-                wins = wins + excluded.wins,
-                games = games + excluded.games,
-                updated_at = excluded.updated_at
-            """,
-            (champion_id, enemy_id, lane, ",".join(item_ids), keystone_id, wins, games, now),
-        )
-        await db.commit()
+    sql = """
+        INSERT INTO builds (champion_id, enemy_id, lane, item_ids, keystone_id, wins, games, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(champion_id, enemy_id, lane, item_ids) DO UPDATE SET
+            wins = wins + excluded.wins,
+            games = games + excluded.games,
+            updated_at = excluded.updated_at
+        """
+    params = (champion_id, enemy_id, lane, ",".join(item_ids), keystone_id, wins, games, now)
+    if _db is not None:
+        await _db.execute(sql, params)
+        await _db.commit()
+    else:
+        async with aiosqlite.connect(db_path) as db:
+            await db.execute(sql, params)
+            await db.commit()
 
 
 async def upsert_lane_stats(
@@ -231,57 +248,81 @@ async def upsert_lane_stats(
     wins: int,
     games: int,
     pick_count: int,
+    _db: aiosqlite.Connection | None = None,
 ) -> None:
     now = datetime.now(timezone.utc).isoformat()
-    async with aiosqlite.connect(db_path) as db:
-        await db.execute(
-            """
-            INSERT INTO champion_lane_stats (champion_id, lane, wins, games, pick_count, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(champion_id, lane) DO UPDATE SET
-                wins = wins + excluded.wins,
-                games = games + excluded.games,
-                pick_count = pick_count + excluded.pick_count,
-                updated_at = excluded.updated_at
-            """,
-            (champion_id, lane, wins, games, pick_count, now),
-        )
-        await db.commit()
+    sql = """
+        INSERT INTO champion_lane_stats (champion_id, lane, wins, games, pick_count, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(champion_id, lane) DO UPDATE SET
+            wins = wins + excluded.wins,
+            games = games + excluded.games,
+            pick_count = pick_count + excluded.pick_count,
+            updated_at = excluded.updated_at
+        """
+    params = (champion_id, lane, wins, games, pick_count, now)
+    if _db is not None:
+        await _db.execute(sql, params)
+        await _db.commit()
+    else:
+        async with aiosqlite.connect(db_path) as db:
+            await db.execute(sql, params)
+            await db.commit()
 
 
-async def is_match_processed(db_path: str, match_id: str) -> bool:
-    async with aiosqlite.connect(db_path) as db:
+async def is_match_processed(
+    db_path: str,
+    match_id: str,
+    _db: aiosqlite.Connection | None = None,
+) -> bool:
+    async def _run(db):
         async with db.execute(
             "SELECT 1 FROM processed_matches WHERE match_id = ?", (match_id,)
         ) as cursor:
             return await cursor.fetchone() is not None
 
-
-async def mark_match_processed(db_path: str, match_id: str) -> None:
-    now = datetime.now(timezone.utc).isoformat()
+    if _db is not None:
+        return await _run(_db)
     async with aiosqlite.connect(db_path) as db:
-        await db.execute(
-            "INSERT OR IGNORE INTO processed_matches (match_id, processed_at) VALUES (?, ?)",
-            (match_id, now),
-        )
-        await db.commit()
+        return await _run(db)
+
+
+async def mark_match_processed(
+    db_path: str,
+    match_id: str,
+    _db: aiosqlite.Connection | None = None,
+) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    sql = "INSERT OR IGNORE INTO processed_matches (match_id, processed_at) VALUES (?, ?)"
+    params = (match_id, now)
+    if _db is not None:
+        await _db.execute(sql, params)
+        await _db.commit()
+    else:
+        async with aiosqlite.connect(db_path) as db:
+            await db.execute(sql, params)
+            await db.commit()
 
 
 async def upsert_ban_stats(
     db_path: str,
     champion_id: int,
     ban_count: int = 1,
+    _db: aiosqlite.Connection | None = None,
 ) -> None:
     now = datetime.now(timezone.utc).isoformat()
-    async with aiosqlite.connect(db_path) as db:
-        await db.execute(
-            """
-            INSERT INTO ban_stats (champion_id, ban_count, updated_at)
-            VALUES (?, ?, ?)
-            ON CONFLICT(champion_id) DO UPDATE SET
-                ban_count  = ban_count + excluded.ban_count,
-                updated_at = excluded.updated_at
-            """,
-            (champion_id, ban_count, now),
-        )
-        await db.commit()
+    sql = """
+        INSERT INTO ban_stats (champion_id, ban_count, updated_at)
+        VALUES (?, ?, ?)
+        ON CONFLICT(champion_id) DO UPDATE SET
+            ban_count  = ban_count + excluded.ban_count,
+            updated_at = excluded.updated_at
+        """
+    params = (champion_id, ban_count, now)
+    if _db is not None:
+        await _db.execute(sql, params)
+        await _db.commit()
+    else:
+        async with aiosqlite.connect(db_path) as db:
+            await db.execute(sql, params)
+            await db.commit()

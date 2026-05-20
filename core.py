@@ -20,6 +20,7 @@ DDRAGON_ITEM_IMG_URL  = "https://ddragon.leagueoflegends.com/cdn/{version}/img/i
 DDRAGON_CHAMP_IMG_URL = "https://ddragon.leagueoflegends.com/cdn/{version}/img/champion/{key}.png"
 
 _champion_cache: dict | None = None
+_normalized_cache: dict | None = None  # {normalized_key: champ_dict} — lazily built
 _item_cache: dict | None = None   # {item_id_str: {"name": str, "version": str}}
 _rune_cache: dict | None = None   # {rune_id_str: {"name": str, "icon": str}}
 _ddragon_version: str | None = None
@@ -34,7 +35,10 @@ async def _latest_ddragon_version(session: aiohttp.ClientSession) -> str:
 
 async def load_champion_cache(force: bool = False) -> dict:
     """Data Dragon から全チャンピオンデータを取得してキャッシュする。"""
-    global _champion_cache
+    global _champion_cache, _normalized_cache
+
+    if force:
+        _normalized_cache = None
 
     if not force and _champion_cache is not None:
         return _champion_cache
@@ -114,27 +118,24 @@ def _normalize(text: str) -> str:
 
 def resolve_champion(name_input: str) -> tuple[int, str, str] | None:
     """日本語・英語の表記ゆれを吸収して (champion_id, name_en, name_ja) を返す。キャッシュ未ロード時は None。"""
+    global _normalized_cache
     if _champion_cache is None:
         return None
 
+    if _normalized_cache is None:
+        all_keys_en = {_normalize(c["name_en"]): c for c in _champion_cache.values()}
+        all_keys_ja = {_normalize(c["name_ja"]): c for c in _champion_cache.values()}
+        _normalized_cache = {**all_keys_en, **all_keys_ja}
+
     norm_input = _normalize(name_input)
 
-    # 完全一致（正規化後）を優先
-    for champ in _champion_cache.values():
-        if (
-            _normalize(champ["name_en"]) == norm_input
-            or _normalize(champ["name_ja"]) == norm_input
-        ):
-            return champ["champion_id"], champ["name_en"], champ["name_ja"]
+    champ = _normalized_cache.get(norm_input)
+    if champ:
+        return champ["champion_id"], champ["name_en"], champ["name_ja"]
 
-    # あいまい検索（英語名）
-    all_keys_en = {_normalize(c["name_en"]): c for c in _champion_cache.values()}
-    all_keys_ja = {_normalize(c["name_ja"]): c for c in _champion_cache.values()}
-    all_keys = {**all_keys_en, **all_keys_ja}
-
-    matches = difflib.get_close_matches(norm_input, all_keys.keys(), n=1, cutoff=0.6)
+    matches = difflib.get_close_matches(norm_input, _normalized_cache.keys(), n=1, cutoff=0.6)
     if matches:
-        champ = all_keys[matches[0]]
+        champ = _normalized_cache[matches[0]]
         return champ["champion_id"], champ["name_en"], champ["name_ja"]
 
     return None
